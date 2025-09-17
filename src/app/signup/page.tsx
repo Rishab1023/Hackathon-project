@@ -22,6 +22,7 @@ import { auth } from "@/lib/firebase";
 
 
 export default function SignupPage() {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -52,7 +53,7 @@ export default function SignupPage() {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, {
-            displayName: email.split('@')[0]
+            displayName: username
         });
 
         router.push("/");
@@ -91,6 +92,17 @@ export default function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
+             <div className="grid gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="johndoe"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

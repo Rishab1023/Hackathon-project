@@ -6,6 +6,7 @@ import RecentActivity from "./_components/recent-activity";
 import SessionsList from "./_components/sessions-list";
 import { getAllScheduledSessions } from "@/app/actions/schedule-actions";
 import { getAnalyticsData } from "@/app/actions/analytics-actions";
+import type { Appointment } from "@/lib/types";
 
 export default async function AdminDashboardPage() {
   const t = await getTranslations();

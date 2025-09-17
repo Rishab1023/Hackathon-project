@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -56,6 +57,8 @@ export default function SchedulePage() {
   const [isPriority, setIsPriority] = useState(false);
   const [riskScore, setRiskScore] = useState<number | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [email, setEmail] = useState("");
+
 
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -107,19 +110,12 @@ export default function SchedulePage() {
           setIsPriority(true);
         }
       }
+      setEmail(user.email || "");
 
     } catch (error) {
       console.error("Failed to load data from local storage", error);
     }
   }, [user, toast]);
-
-  useEffect(() => {
-    if (user?.email && !name) {
-        setEmail(user.email);
-    }
-  }, [user, name]);
-
-  const [email, setEmail] = useState(user?.email || "");
 
 
   useEffect(() => {
@@ -172,14 +168,17 @@ export default function SchedulePage() {
       return;
     }
     
-    const newAppointment: Omit<Appointment, 'id'> = {
+    const newAppointment: Omit<Appointment, 'id' | 'riskScore'> & { riskScore?: number } = {
       name,
       email,
       date: date.toISOString(),
       time: selectedTime,
-      riskScore: riskScore,
       userId: user.uid,
     };
+    
+    if (riskScore !== undefined) {
+      newAppointment.riskScore = riskScore;
+    }
     
     try {
         await addScheduledSession(newAppointment);
@@ -362,3 +361,5 @@ export default function SchedulePage() {
     </div>
   );
 }
+
+    

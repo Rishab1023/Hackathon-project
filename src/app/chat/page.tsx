@@ -10,7 +10,7 @@ import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Send, User} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import type {Message} from '@/lib/types';
-import {createStreamableValue, readStreamableValue} from 'ai/rsc';
+import {readStreamableValue} from 'ai/rsc';
 import { useTranslation } from "@/hooks/use-translation";
 
 export default function ChatPage() {
@@ -34,20 +34,14 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const streamable = createStreamableValue();
-      peerSupportChat({
+      const result = await peerSupportChat({
         history: newMessages.map(m => ({role: m.role, content: m.content})),
-      }).then(async res => {
-        for await (const delta of readStreamableValue(res)) {
-          streamable.update(delta);
-        }
-        streamable.done();
       });
 
       let assistantResponse = '';
       setMessages(prev => [...prev, {role: 'model', content: ''}]);
       
-      for await (const delta of readStreamableValue(streamable.value)) {
+      for await (const delta of readStreamableValue(result)) {
         assistantResponse += delta;
         setMessages(prev => {
           const lastMessage = prev[prev.length - 1];

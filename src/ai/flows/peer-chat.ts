@@ -37,7 +37,7 @@ Alex: {{{content}}}
 {{/each}}
 Alex:`;
 
-    const {stream} = ai.generateStream({
+    const {stream} = await ai.generateStream({
       prompt: prompt,
       history: input.history,
       config: {

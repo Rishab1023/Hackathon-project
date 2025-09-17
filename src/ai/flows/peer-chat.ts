@@ -9,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {createStreamableValue} from 'ai/rsc';
 
 const PeerSupportChatInputSchema = z.object({
   history: z
@@ -19,7 +20,10 @@ const PeerSupportChatInputSchema = z.object({
 export type PeerSupportChatInput = z.infer<typeof PeerSupportChatInputSchema>;
 
 export async function peerSupportChat(input: PeerSupportChatInput) {
-  const prompt = `You are a friendly and empathetic peer supporter in a university mental health support system. Your name is Alex. You are not a licensed therapist, but a student who is trained to listen and provide a safe space for others to share what's on their mind.
+  const streamable = createStreamableValue('');
+
+  (async () => {
+    const prompt = `You are a friendly and empathetic peer supporter in a university mental health support system. Your name is Alex. You are not a licensed therapist, but a student who is trained to listen and provide a safe space for others to share what's on their mind.
 
 Keep your responses concise, warm, and encouraging. Use emojis where appropriate to convey warmth. Your goal is to make the user feel heard and understood. Do not give medical advice. If the user seems to be in serious distress, gently suggest they consider scheduling a session with a professional counselor through the university's services or contacting a crisis hotline.
 
@@ -33,13 +37,20 @@ Alex: {{{content}}}
 {{/each}}
 Alex:`;
 
-  const {stream} = ai.generateStream({
-    prompt: prompt,
-    history: input.history,
-    config: {
-      temperature: 0.7,
-    },
-  });
+    const {stream} = ai.generateStream({
+      prompt: prompt,
+      history: input.history,
+      config: {
+        temperature: 0.7,
+      },
+    });
 
-  return stream;
+    for await (const chunk of stream) {
+      streamable.update(chunk.text);
+    }
+
+    streamable.done();
+  })();
+
+  return streamable.value;
 }

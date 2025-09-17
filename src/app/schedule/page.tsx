@@ -78,7 +78,7 @@ export default function SchedulePage() {
         setEmail(user.email || "");
       }
     } catch (error) {
-      console.error("Failed to load initial data from localStorage", error);
+      console.error("Failed to load initial data from localStorage or user", error);
     }
   }, [user]);
 

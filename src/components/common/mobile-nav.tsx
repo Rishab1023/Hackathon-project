@@ -9,7 +9,6 @@ import { Logo } from "@/components/common/logo";
 
 const navLinks = [
   { href: "/", label: "AI Analyzer" },
-  { href: "/grades", label: "Grade Analysis" },
   { href: "/resources", label: "Resources" },
   { href: "/schedule", label: "Schedule Session" },
 ];

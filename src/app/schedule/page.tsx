@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 const availableTimes = [
   "09:00 AM",
@@ -54,14 +55,38 @@ export default function SchedulePage() {
       });
       return;
     }
-    console.log({
+    
+    const newAppointment = {
+      id: new Date().toISOString(),
       name,
       email,
-      date: format(date, "PPP"),
+      date: date.toISOString(),
       time: selectedTime,
-    });
-    setIsSubmitted(true);
+    };
+    
+    try {
+        const storedSessions = localStorage.getItem("scheduledSessions");
+        const sessions = storedSessions ? JSON.parse(storedSessions) : [];
+        sessions.push(newAppointment);
+        localStorage.setItem("scheduledSessions", JSON.stringify(sessions));
+        setIsSubmitted(true);
+    } catch (error) {
+        console.error("Failed to save session to local storage", error);
+        toast({
+            variant: "destructive",
+            title: "Scheduling Failed",
+            description: "There was an error saving your appointment. Please try again.",
+        });
+    }
   };
+  
+  const resetForm = () => {
+    setDate(new Date());
+    setSelectedTime(undefined);
+    setName("");
+    setEmail("");
+    setIsSubmitted(false);
+  }
 
   if (isSubmitted) {
     return (
@@ -82,8 +107,11 @@ export default function SchedulePage() {
                     </p>
                     <p className="text-muted-foreground pt-2">A confirmation email has been sent to {email}.</p>
                 </CardContent>
-                <CardFooter>
-                     <Button className="w-full" onClick={() => setIsSubmitted(false)}>Schedule Another</Button>
+                <CardFooter className="flex-col sm:flex-row gap-2">
+                     <Button className="w-full" onClick={resetForm}>Schedule Another</Button>
+                     <Button variant="secondary" className="w-full" asChild>
+                        <Link href="/my-sessions">View My Sessions</Link>
+                     </Button>
                 </CardFooter>
             </Card>
         </div>
@@ -133,7 +161,7 @@ export default function SchedulePage() {
                       selected={date}
                       onSelect={setDate}
                       initialFocus
-                      disabled={(day) => day < new Date() || day.getDay() === 0 || day.getDay() === 6}
+                      disabled={(day) => day < new Date(new Date().setHours(0,0,0,0)) || day.getDay() === 0 || day.getDay() === 6}
                     />
                   </PopoverContent>
                 </Popover>
@@ -168,11 +196,11 @@ export default function SchedulePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} />
+                        <Input id="name" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} required />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email Address</Label>
-                        <Input id="email" type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+                        <Input id="email" type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
                     </div>
                 </div>
             </div>

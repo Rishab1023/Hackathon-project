@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/", label: "AI Analyzer" },
   { href: "/resources", label: "Resources" },
   { href: "/schedule", label: "Schedule Session" },
+  { href: "/my-sessions", label: "My Sessions" },
   { href: "/chat", label: "Peer Chat" },
 ];
 

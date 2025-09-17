@@ -26,13 +26,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        try {
-            const idTokenResult = await user.getIdTokenResult();
-            setIsAdmin(!!idTokenResult.claims.admin);
-        } catch(e) {
-            console.error("Failed to get admin status", e);
-            setIsAdmin(false);
-        }
+        // Check if the user's email is the admin email
+        const isAdminUser = user.email === "admin@example.com";
+        setIsAdmin(isAdminUser);
       } else {
         setUser(null);
         setIsAdmin(false);

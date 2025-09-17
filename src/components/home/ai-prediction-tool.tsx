@@ -218,8 +218,8 @@ export function AIPredictionTool() {
                         Urgent: Schedule Now
                       </Button>
                     )}
-                    {result.riskScore > 40 && (
-                       <Button onClick={() => handleScheduleNavigation(false)} className={cn(result.riskScore > 75 ? 'bg-destructive/50' : 'bg-accent text-accent-foreground hover:bg-accent/90')}>
+                    {result.riskScore > 40 && result.riskScore <= 75 && (
+                       <Button onClick={() => handleScheduleNavigation(false)} className={cn('bg-accent text-accent-foreground hover:bg-accent/90')}>
                           {t('analyzer.result.actions.button')}
                        </Button>
                     )}

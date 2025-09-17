@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import en from "@/lib/locales/en.json";
 import hi from "@/lib/locales/hi.json";
 
@@ -28,6 +29,7 @@ function setCookie(name: string, value: string, days: number) {
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState<Language>("en");
+  const router = useRouter();
 
   useEffect(() => {
     const storedLanguage = localStorage.getItem("language") as Language;
@@ -45,8 +47,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     } else {
       document.body.style.fontFamily = '"PT Sans", sans-serif';
     }
-     // Reload to apply server-side translations
-    window.location.reload();
+     // Refresh the page to apply server-side translations without a full reload
+    router.refresh();
   };
 
   const t = useCallback((key: string, replacements?: { [key: string]: string }) => {

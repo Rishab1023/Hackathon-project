@@ -37,6 +37,11 @@ export function MobileNav({ navLinks }: MobileNavProps) {
     handleLinkClick();
   }
 
+  const handleLanguageChange = (lang: "en" | "hi") => {
+    setLanguage(lang);
+    setIsOpen(false);
+  }
+
   return (
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
@@ -84,8 +89,8 @@ export function MobileNav({ navLinks }: MobileNavProps) {
             <div className="space-y-4">
                <h3 className="font-medium flex items-center gap-2"><Globe className="h-5 w-5"/> {language === 'en' ? 'Language' : 'भाषा'}</h3>
                <div className="flex flex-col space-y-2">
-                  <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => {setLanguage("en"); setIsOpen(false);}}>English</Button>
-                  <Button variant={language === 'hi' ? 'default' : 'outline'} onClick={() => {setLanguage("hi"); setIsOpen(false);}}>हिंदी (Hindi)</Button>
+                  <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => handleLanguageChange("en")}>English</Button>
+                  <Button variant={language === 'hi' ? 'default' : 'outline'} onClick={() => handleLanguageChange("hi")}>हिंदी (Hindi)</Button>
                </div>
             </div>
           </div>

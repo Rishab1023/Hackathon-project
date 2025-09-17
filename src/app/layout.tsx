@@ -11,12 +11,14 @@ const ptSans = PT_Sans({
   subsets: ['latin'],
   weight: ['400', '700'],
   variable: '--font-pt-sans',
+  display: 'swap',
 });
 
 const hind = Hind({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-hind',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {

@@ -29,6 +29,7 @@ export default function Home() {
               width={600}
               height={400}
               className="rounded-lg object-cover shadow-2xl"
+              priority
             />
           </div>
         </section>

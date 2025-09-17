@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { format } from "date-fns";
+import { format, addDays, startOfTomorrow } from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,55 @@ export default function SchedulePage() {
     }
   }, [user]);
 
+  const findAndSetEarliestSlot = useCallback(async () => {
+    setIsLoadingTimes(true);
+    let earliestDate: Date | undefined = undefined;
+    let earliestTime: string | undefined = undefined;
+
+    // Search for the next 30 days
+    for (let i = 0; i < 30; i++) {
+        const checkDate = addDays(new Date(), i);
+        // Skip weekends
+        if (checkDate.getDay() === 0 || checkDate.getDay() === 6) {
+            continue;
+        }
+
+        try {
+            const times = await getScheduledTimesForDate(checkDate);
+            const firstAvailableTime = availableTimes.find(time => !times.includes(time));
+
+            if (firstAvailableTime) {
+                earliestDate = checkDate;
+                earliestTime = firstAvailableTime;
+                setBookedTimes(times);
+                break; // Found the earliest slot
+            }
+        } catch (error) {
+            console.error("Error fetching times for priority booking:", error);
+            // Continue to the next day
+        }
+    }
+
+    if (earliestDate && earliestTime) {
+        setDate(earliestDate);
+        setSelectedTime(earliestTime);
+    } else {
+         toast({
+            variant: "destructive",
+            title: "No available slots",
+            description: "We couldn't find any available appointment slots in the next 30 days.",
+        });
+    }
+    setIsLoadingTimes(false);
+  }, [toast]);
+
+  useEffect(() => {
+    if (isPriority) {
+        findAndSetEarliestSlot();
+    }
+  }, [isPriority, findAndSetEarliestSlot]);
+
+
   const fetchBookedTimes = useCallback(async (selectedDate: Date) => {
     setIsLoadingTimes(true);
     try {
@@ -122,6 +171,9 @@ export default function SchedulePage() {
               description: "This time slot has just been booked. Please select another time.",
             });
             setBookedTimes(currentBookedTimes);
+            if (isPriority) {
+              await findAndSetEarliestSlot();
+            }
             setIsSubmitting(false);
             return;
         }
@@ -185,7 +237,7 @@ export default function SchedulePage() {
                 <CardContent className="space-y-2">
                     <p className="text-muted-foreground">{t('schedule.success.thankYou', { name })}</p>
                     <p className="text-muted-foreground">
-                        {t('schedule.success.confirmation', { date: format(date!, "EEEE, MMMM do"), time: selectedTime! })}
+                        {date && selectedTime ? t('schedule.success.confirmation', { date: format(date, "EEEE, MMMM do"), time: selectedTime }) : ''}
                     </p>
                     <p className="text-muted-foreground pt-2">{t('schedule.success.emailConfirmation', { email })}</p>
                 </CardContent>
@@ -226,7 +278,7 @@ export default function SchedulePage() {
                       <AlertTriangle className="h-4 w-4" />
                       <AlertTitle>Priority Booking</AlertTitle>
                       <AlertDescription>
-                          Based on your analysis, we recommend booking an appointment soon. Please select a date to see available times.
+                          Based on your analysis, we've pre-selected the earliest available appointment for you. Please confirm the details below.
                       </AlertDescription>
                   </Alert>
               )}
@@ -241,7 +293,7 @@ export default function SchedulePage() {
                           "w-full justify-start text-left font-normal",
                           !date && "text-muted-foreground"
                         )}
-                        disabled={isPriority}
+                        disabled={isPriority || isLoadingTimes}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {date ? format(date, "PPP") : <span>{t('schedule.form.datePlaceholder')}</span>}
@@ -260,12 +312,9 @@ export default function SchedulePage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-base">{t('schedule.form.timeLabel')}</Label>
-                   {!date && (
-                     <div className="text-sm text-muted-foreground h-full flex items-center">Please select a date first.</div>
-                   )}
-                   {date && isLoadingTimes && (
-                     <div className="h-full flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin" />
+                   {(!date || isLoadingTimes) && (
+                     <div className="h-full flex items-center justify-center p-2 border rounded-md min-h-[100px]">
+                        {isPriority || isLoadingTimes ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-sm text-muted-foreground">Please select a date first.</div>}
                      </div>
                    )}
                    {date && !isLoadingTimes && (
@@ -282,13 +331,14 @@ export default function SchedulePage() {
                                 value={time}
                                 id={time}
                                 className="peer sr-only"
-                                disabled={isBooked}
+                                disabled={isBooked || isPriority}
                               />
                               <Label
                                 htmlFor={time}
                                 className={cn(
                                   "flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
-                                  isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70"
+                                  (isBooked || (isPriority && selectedTime !== time)) && "cursor-not-allowed bg-muted/50 text-muted-foreground opacity-70",
+                                  isBooked && "line-through"
                                 )}
                               >
                                 {time}

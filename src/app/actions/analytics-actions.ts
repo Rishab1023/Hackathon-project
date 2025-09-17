@@ -3,11 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, setDoc, increment, getDocs } from "firebase/firestore";
-import type { Appointment } from "@/lib/types";
 
 export async function trackResourceClick(resourceId: string) {
-    const resourceRef = doc(db, "analytics", "resources");
     try {
+        const resourceRef = doc(db, "analytics", "resources");
         await setDoc(resourceRef, {
             totalClicks: increment(1),
             [`clicks.${resourceId}`]: increment(1),
@@ -32,10 +31,10 @@ export async function getAnalyticsData() {
         return {
             totalSessions,
             totalResources,
-            // You can add more complex analytics here if needed
         };
     } catch (error) {
         console.error("Failed to load analytics data from Firestore:", error);
+        // Return default values if Firestore is offline or an error occurs
         return {
             totalSessions: 0,
             totalResources: 0,

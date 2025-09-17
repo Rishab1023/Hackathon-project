@@ -61,6 +61,7 @@ export async function getAllScheduledSessions(): Promise<Appointment[]> {
         return sessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
         console.error("Failed to load all sessions from Firestore:", error);
+        // Return an empty array if Firestore is offline or an error occurs
         return [];
     }
 }

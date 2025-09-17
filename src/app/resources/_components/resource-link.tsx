@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { incrementResourceClickCount } from "@/app/actions/analytics-actions";
+
+const ANALYTICS_STORAGE_KEY = "resourceAnalytics";
 
 interface ResourceLinkProps {
     id: string;
@@ -12,14 +13,27 @@ interface ResourceLinkProps {
     rel?: string;
 }
 
-export default function ResourceLink({ id, href, children, type, ...props }: ResourceLinkProps) {
+export default function ResourceLink({ id, href, children, ...props }: ResourceLinkProps) {
   
-  const handleClick = async () => {
+  const handleClick = () => {
     try {
-      // No need to await, let it run in the background
-      incrementResourceClickCount(id);
+      const storedData = localStorage.getItem(ANALYTICS_STORAGE_KEY);
+      const analytics = storedData ? JSON.parse(storedData) : { totalClicks: 0, clicks: {} };
+      
+      analytics.totalClicks = (analytics.totalClicks || 0) + 1;
+      analytics.clicks[id] = (analytics.clicks[id] || 0) + 1;
+      
+      const updatedData = JSON.stringify(analytics);
+      localStorage.setItem(ANALYTICS_STORAGE_KEY, updatedData);
+
+      // Manually trigger a storage event to notify other components (like admin page)
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: ANALYTICS_STORAGE_KEY,
+        newValue: updatedData,
+      }));
+
     } catch (error) {
-      console.error("Failed to save resource click count", error);
+      console.error("Failed to save resource click count to localStorage", error);
     }
   };
 

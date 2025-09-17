@@ -1,32 +1,59 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, CalendarCheck } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 
-interface RecentActivityProps {
-    recentSessions: Appointment[];
-}
+const SESSIONS_STORAGE_KEY = "sessions";
 
-export default function RecentActivity({ recentSessions }: RecentActivityProps) {
+export default function RecentActivity() {
     const { t } = useTranslation();
+    const [recentSessions, setRecentSessions] = useState<Appointment[]>([]);
+
+    useEffect(() => {
+        const fetchRecentSessions = () => {
+            try {
+                const allSessions = JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
+                // Sort by date created (assuming id is a timestamp-based string)
+                const sortedSessions = allSessions.sort((a,b) => {
+                  const dateA = a._id ? new Date(parseInt(a._id.split('_')[1])).getTime() : 0;
+                  const dateB = b._id ? new Date(parseInt(b._id.split('_')[1])).getTime() : 0;
+                  return dateB - dateA;
+                });
+                setRecentSessions(sortedSessions.slice(0, 5)); // Get latest 5
+            } catch (e) {
+                console.error("Failed to load recent sessions from localStorage", e);
+            }
+        };
+        
+        fetchRecentSessions();
+        
+        // Listen for storage changes to update the list
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === SESSIONS_STORAGE_KEY) {
+                fetchRecentSessions();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+
+    }, []);
 
     const getSessionDate = (session: Appointment) => {
         if (session._id) {
-            // Attempt to parse date from MongoDB ObjectId if it exists
             try {
-                return new Date(parseInt(session._id.substring(0, 8), 16) * 1000);
+                return new Date(parseInt(session._id.split('_')[1]));
             } catch (e) {
-                // Fallback for invalid ObjectId or other formats
+                // Fallback for different formats
             }
         }
-        // Fallback to the session's date property if available and valid
         if (session.date && !isNaN(new Date(session.date).getTime())) {
             return new Date(session.date);
         }
-        // Return current date as a last resort
         return new Date();
     }
 

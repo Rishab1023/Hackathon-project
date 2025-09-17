@@ -1,16 +1,39 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 
-interface SessionsListProps {
-    sessions: Appointment[];
-}
+const SESSIONS_STORAGE_KEY = "sessions";
 
-export default function SessionsList({ sessions }: SessionsListProps) {
+export default function SessionsList() {
     const { t } = useTranslation();
+    const [sessions, setSessions] = useState<Appointment[]>([]);
+
+    useEffect(() => {
+        const fetchSessions = () => {
+             try {
+                const storedSessions = localStorage.getItem(SESSIONS_STORAGE_KEY);
+                const allSessions: Appointment[] = storedSessions ? JSON.parse(storedSessions) : [];
+                setSessions(allSessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+             } catch (e) {
+                console.error("Failed to fetch sessions from localStorage", e);
+             }
+        };
+
+        fetchSessions();
+
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === SESSIONS_STORAGE_KEY) {
+                fetchSessions();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
 
     return (
         <Card className="lg:col-span-4">

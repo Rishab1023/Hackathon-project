@@ -4,28 +4,11 @@ import { getTranslations } from "@/lib/get-translation";
 import AnalyticsCards from "./_components/analytics-cards";
 import RecentActivity from "./_components/recent-activity";
 import SessionsList from "./_components/sessions-list";
-import { Appointment } from "@/lib/types";
-
-async function getAnalyticsData() {
-  // Mock data to avoid database connection
-  const totalSessions = 0;
-  const totalResources = 0;
-  const recentSessions: Appointment[] = [];
-  const allSessions: Appointment[] = [];
-
-  return { totalSessions, totalResources, recentSessions, allSessions };
-}
-
+import type { Appointment } from "@/lib/types";
 
 export default async function AdminDashboardPage() {
   const t = await getTranslations();
-  const { totalSessions, totalResources, recentSessions, allSessions } = await getAnalyticsData();
   
-  // Convert ObjectId to string for client-side consumption
-  const sanitizedRecentSessions = recentSessions.map(s => ({...s, _id: s._id?.toString()}));
-  const sanitizedAllSessions = allSessions.map(s => ({...s, _id: s._id?.toString()}));
-
-
   return (
     <AuthGuard adminOnly>
       <div className="container mx-auto px-4 py-8 md:py-12">
@@ -38,11 +21,11 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
 
-        <AnalyticsCards totalSessions={totalSessions} totalResources={totalResources} />
-
+        {/* The components themselves will fetch data from localStorage on the client */}
+        <AnalyticsCards />
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7 mt-8">
-          <SessionsList sessions={sanitizedAllSessions} />
-          <RecentActivity recentSessions={sanitizedRecentSessions} />
+          <SessionsList />
+          <RecentActivity />
         </div>
       </div>
     </AuthGuard>

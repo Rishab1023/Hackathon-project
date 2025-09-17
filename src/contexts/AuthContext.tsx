@@ -1,17 +1,17 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 // Define the list of admin emails
 const adminEmails = ["admin@example.com"];
 
-// This is a mock User object that matches the Firebase User type shape
+// This is a mock User object
 interface MockUser {
   uid: string;
   email: string | null;
   displayName: string | null;
-  // Add other fields you might use from the User object
+  // Add other fields you might use
 }
 
 interface AuthContextType {

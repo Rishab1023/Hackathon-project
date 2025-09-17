@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { incrementResourceClickCount } from "@/lib/firestore";
+import { db } from "@/lib/firebase";
+import { doc, runTransaction } from "firebase/firestore";
+
 
 interface ResourceLinkProps {
     id: string;
@@ -13,6 +15,29 @@ interface ResourceLinkProps {
 }
 
 export default function ResourceLink({ id, href, children, type, ...props }: ResourceLinkProps) {
+  
+  const incrementResourceClickCount = async (resourceId: string): Promise<void> => {
+    const resourceAnalyticsDocRef = doc(db, "analytics", "resources");
+    try {
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(resourceAnalyticsDocRef);
+        if (!docSnap.exists()) {
+          transaction.set(resourceAnalyticsDocRef, { totalClicks: 1, [resourceId]: 1 });
+        } else {
+          const data = docSnap.data();
+          const newTotal = (data.totalClicks || 0) + 1;
+          const newResourceCount = (data[resourceId] || 0) + 1;
+          transaction.update(resourceAnalyticsDocRef, {
+            totalClicks: newTotal,
+            [resourceId]: newResourceCount,
+          });
+        }
+      });
+    } catch (e) {
+      console.error("Transaction failed: ", e);
+    }
+  }
+
   const handleClick = () => {
     try {
       incrementResourceClickCount(id);

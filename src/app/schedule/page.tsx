@@ -36,9 +36,9 @@ import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import { addScheduledSession, getScheduledSessions } from "@/lib/firestore";
 import { AuthGuard } from "@/components/auth/auth-guard";
+import { db } from "@/lib/firebase";
+import { collection, query, getDocs, addDoc } from "firebase/firestore";
 
 const availableTimes = [
   "09:00 AM",
@@ -64,6 +64,17 @@ export default function SchedulePage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user } = useAuth();
+  
+  const getScheduledSessions = useCallback(async (): Promise<Appointment[]> => {
+    const q = query(collection(db, "sessions"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Appointment));
+  }, []);
+
+  const addScheduledSession = useCallback(async (session: Omit<Appointment, 'id'>): Promise<string> => {
+    const docRef = await addDoc(collection(db, "sessions"), session);
+    return docRef.id;
+  }, []);
   
   const getBookedTimesForDate = useCallback((selectedDate: Date | undefined) => {
     if (!selectedDate) return [];
@@ -112,7 +123,7 @@ export default function SchedulePage() {
     } catch (error) {
       console.error("Failed to load data from local storage", error);
     }
-  }, [user, toast]);
+  }, [user, toast, getScheduledSessions]);
 
 
   useEffect(() => {
@@ -353,7 +364,7 @@ export default function SchedulePage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email || (isPriority && !selectedTime) }>
+              <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email}>
                 {t('schedule.form.submitButton')}
               </Button>
             </CardFooter>

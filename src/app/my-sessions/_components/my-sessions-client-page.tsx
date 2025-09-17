@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { getMyScheduledSessions, deleteScheduledSession } from "@/lib/firestore";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 
 export default function MySessionsClientPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -39,6 +40,17 @@ export default function MySessionsClientPage() {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  const getMyScheduledSessions = useCallback(async (userId: string): Promise<Appointment[]> => {
+    const q = query(collection(db, "sessions"), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Appointment));
+  }, []);
+
+  const deleteScheduledSession = useCallback(async (sessionId: string): Promise<void> => {
+    await deleteDoc(doc(db, "sessions", sessionId));
+  }, []);
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -64,7 +76,7 @@ export default function MySessionsClientPage() {
         }
     }
     fetchSessions();
-  }, [user, t, toast]);
+  }, [user, t, toast, getMyScheduledSessions]);
 
   const cancelSession = async (sessionId: string) => {
     try {
@@ -73,8 +85,8 @@ export default function MySessionsClientPage() {
             title: t('mySessions.toast.cancelSuccess.title'),
             description: t('mySessions.toast.cancelSuccess.description'),
         });
-        // Reload the page to show the updated list of sessions
-        window.location.reload();
+        // Update state instead of reloading
+        setSessions(prevSessions => prevSessions.filter(s => s.id !== sessionId));
     } catch (error) {
         console.error("Failed to cancel session", error);
         toast({

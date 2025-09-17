@@ -1,7 +1,6 @@
 'use client';
 
 import {useState, useRef, useEffect, type FormEvent} from 'react';
-import {useStreamableValue} from 'ai/rsc';
 import {peerSupportChat} from '@/ai/flows/peer-chat';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -11,6 +10,7 @@ import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Send, User} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import type {Message} from '@/lib/types';
+import {readStreamableValue} from 'ai/rsc';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,26 +31,32 @@ export default function ChatPage() {
     setInput('');
     setIsLoading(true);
 
-    const stream = await peerSupportChat({
-      history: newMessages.map(m => ({role: m.role, content: m.content})),
-    });
-
-    let assistantResponse = '';
-    for await (const delta of stream) {
-      assistantResponse += delta;
-      setMessages(prev => {
-        const lastMessage = prev[prev.length - 1];
-        if (lastMessage.role === 'model') {
-          return [
-            ...prev.slice(0, -1),
-            {role: 'model', content: assistantResponse},
-          ];
-        } else {
-          return [...prev, {role: 'model', content: assistantResponse}];
-        }
+    try {
+      const stream = await peerSupportChat({
+        history: newMessages.map(m => ({role: m.role, content: m.content})),
       });
+
+      let assistantResponse = '';
+      setMessages(prev => [...prev, {role: 'model', content: ''}]);
+
+      for await (const delta of readStreamableValue(stream)) {
+        assistantResponse += delta;
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage.role === 'model') {
+            return [
+              ...prev.slice(0, -1),
+              {role: 'model', content: assistantResponse},
+            ];
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error during chat stream:', error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -110,7 +116,7 @@ export default function ChatPage() {
                    )}
                 </div>
               ))}
-               {isLoading && messages[messages.length -1].role === 'user' && (
+               {isLoading && messages.length > 0 && messages[messages.length -1].role === 'user' && (
                 <div className="flex items-start gap-3 justify-start">
                   <Avatar className="h-9 w-9 border">
                     <AvatarImage src="https://picsum.photos/seed/alex-avatar/100" alt="Alex" />

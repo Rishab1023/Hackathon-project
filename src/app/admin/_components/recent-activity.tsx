@@ -14,7 +14,7 @@ export default function RecentActivity() {
     const [recentSessions, setRecentSessions] = useState<Appointment[]>([]);
 
     useEffect(() => {
-        const fetchRecentSessions = ()_=> {
+        const fetchRecentSessions = () => {
             try {
                 const allSessions = JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
                 const sortedSessions = allSessions.sort((a,b) => new Date(b.id.split('_')[1]).getTime() - new Date(a.id.split('_')[1]).getTime());

@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/use-translation";
 
 const availableTimes = [
   "09:00 AM",
@@ -44,14 +45,15 @@ export default function SchedulePage() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !selectedTime || !name || !email) {
       toast({
         variant: "destructive",
-        title: "Incomplete Form",
-        description: "Please fill out all fields to schedule your session.",
+        title: t('schedule.toast.incomplete.title'),
+        description: t('schedule.toast.incomplete.description'),
       });
       return;
     }
@@ -74,8 +76,8 @@ export default function SchedulePage() {
         console.error("Failed to save session to local storage", error);
         toast({
             variant: "destructive",
-            title: "Scheduling Failed",
-            description: "There was an error saving your appointment. Please try again.",
+            title: t('schedule.toast.failed.title'),
+            description: t('schedule.toast.failed.description'),
         });
     }
   };
@@ -96,21 +98,19 @@ export default function SchedulePage() {
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                         <CheckCircle className="h-10 w-10 text-primary" />
                     </div>
-                    <CardTitle className="font-headline text-2xl md:text-3xl pt-4">Session Scheduled!</CardTitle>
+                    <CardTitle className="font-headline text-2xl md:text-3xl pt-4">{t('schedule.success.title')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                    <p className="text-muted-foreground">Thank you for reaching out, {name}.</p>
+                    <p className="text-muted-foreground">{t('schedule.success.thankYou', { name })}</p>
                     <p className="text-muted-foreground">
-                        Your counseling session is confirmed for{" "}
-                        <span className="font-semibold text-primary">{format(date!, "EEEE, MMMM do")}</span> at{" "}
-                        <span className="font-semibold text-primary">{selectedTime}</span>.
+                        {t('schedule.success.confirmation', { date: format(date!, "EEEE, MMMM do"), time: selectedTime })}
                     </p>
-                    <p className="text-muted-foreground pt-2">A confirmation email has been sent to {email}.</p>
+                    <p className="text-muted-foreground pt-2">{t('schedule.success.emailConfirmation', { email })}</p>
                 </CardContent>
                 <CardFooter className="flex-col sm:flex-row gap-2">
-                     <Button className="w-full" onClick={resetForm}>Schedule Another</Button>
+                     <Button className="w-full" onClick={resetForm}>{t('schedule.success.scheduleAnother')}</Button>
                      <Button variant="secondary" className="w-full" asChild>
-                        <Link href="/my-sessions">View My Sessions</Link>
+                        <Link href="/my-sessions">{t('schedule.success.viewSessions')}</Link>
                      </Button>
                 </CardFooter>
             </Card>
@@ -122,26 +122,25 @@ export default function SchedulePage() {
     <div className="container mx-auto px-4 py-8 md:py-12">
       <div className="space-y-4 text-center mb-12">
         <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
-          Schedule a Session
+          {t('schedule.title')}
         </h1>
         <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl">
-          Book a confidential session with one of our counselors. Select a date
-          and time that works for you.
+          {t('schedule.description')}
         </p>
       </div>
 
       <Card className="w-full max-w-2xl mx-auto shadow-lg">
         <form onSubmit={handleSubmit}>
           <CardHeader>
-            <CardTitle>Booking Details</CardTitle>
+            <CardTitle>{t('schedule.form.title')}</CardTitle>
             <CardDescription>
-              All sessions are confidential and free of charge.
+              {t('schedule.form.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <Label className="text-base">1. Select a Date</Label>
+                <Label className="text-base">{t('schedule.form.dateLabel')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -152,7 +151,7 @@ export default function SchedulePage() {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      {date ? format(date, "PPP") : <span>{t('schedule.form.datePlaceholder')}</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -167,7 +166,7 @@ export default function SchedulePage() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label className="text-base">2. Select a Time</Label>
+                <Label className="text-base">{t('schedule.form.timeLabel')}</Label>
                  <RadioGroup
                     value={selectedTime}
                     onValueChange={setSelectedTime}
@@ -192,22 +191,22 @@ export default function SchedulePage() {
               </div>
             </div>
              <div className="space-y-4">
-                <h3 className="text-base font-medium">3. Your Information</h3>
+                <h3 className="text-base font-medium">{t('schedule.form.infoLabel')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} required />
+                        <Label htmlFor="name">{t('schedule.form.nameLabel')}</Label>
+                        <Input id="name" placeholder={t('schedule.form.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} required />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input id="email" type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                        <Label htmlFor="email">{t('schedule.form.emailLabel')}</Label>
+                        <Input id="email" type="email" placeholder={t('schedule.form.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
                     </div>
                 </div>
             </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full">
-              Confirm Appointment
+              {t('schedule.form.submitButton')}
             </Button>
           </CardFooter>
         </form>

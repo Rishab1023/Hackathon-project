@@ -1,0 +1,167 @@
+{
+  "nav": {
+    "analyzer": "AI Analyzer",
+    "resources": "Resources",
+    "schedule": "Schedule Session",
+    "mySessions": "My Sessions",
+    "chat": "Peer Chat"
+  },
+  "home": {
+    "title": "Welcome to MindBloom",
+    "description": "Your safe space for understanding and improving student mental well-being. Use our AI tool to get insights or explore our resources.",
+    "heroAlt": "A person in a calm, supportive environment"
+  },
+  "analyzer": {
+    "title": "AI Mental Health Analyzer",
+    "form": {
+      "label": "Share your thoughts",
+      "placeholder": "Describe how you've been feeling lately, what's on your mind, or any challenges you're facing...",
+      "validation": {
+        "minLength": "Please enter at least 50 characters to get an accurate analysis."
+      },
+      "button": {
+        "default": "Analyze My Text",
+        "loading": "Analyzing..."
+      }
+    },
+    "toast": {
+      "error": {
+        "title": "Analysis Failed",
+        "description": "There was an error analyzing the text. Please try again."
+      }
+    },
+    "result": {
+      "riskScore": {
+        "title": "Risk Score"
+      },
+      "explanation": {
+        "title": "Explanation"
+      },
+      "actions": {
+        "title": "Suggested Actions",
+        "button": "Schedule a Counseling Session"
+      }
+    }
+  },
+  "resources": {
+    "title": "Mental Health Resources",
+    "description": "Find the support you need. Here is a directory of on-campus, national, and peer support services.",
+    "servicesOffered": "Services Offered:",
+    "contactInfo": "Contact Information:",
+    "categories": {
+      "on-campus": "On-Campus",
+      "national": "National",
+      "peersupport": "Peer Support"
+    },
+    "list": {
+      "1": {
+        "name": "Campus Counseling Center",
+        "description": "Confidential counseling services for all registered students.",
+        "services": [
+          "Individual Therapy",
+          "Group Therapy",
+          "Stress Management Workshops",
+          "24/7 Crisis Line"
+        ]
+      },
+      "2": {
+        "name": "National Suicide Prevention Lifeline",
+        "description": "Free and confidential support for people in distress, prevention and crisis resources for you or your loved ones.",
+        "services": [
+          "24/7 Call & Text Support",
+          "Online Chat",
+          "Resources for Veterans"
+        ]
+      },
+      "3": {
+        "name": "The Trevor Project",
+        "description": "The world's largest suicide prevention and crisis intervention organization for LGBTQ (lesbian, gay, bisexual, transgender, queer, and questioning) young people.",
+        "services": [
+          "24/7 Call, Text & Chat",
+          "Online Community",
+          "Advocacy Programs"
+        ]
+      },
+      "4": {
+        "name": "Peer Support Network",
+        "description": "Connect with trained peer volunteers who can offer a listening ear and share their own experiences.",
+        "services": [
+          "One-on-one Peer Chat",
+          "Support Groups",
+          "Community Events"
+        ]
+      }
+    }
+  },
+  "schedule": {
+    "title": "Schedule a Session",
+    "description": "Book a confidential session with one of our counselors. Select a date and time that works for you.",
+    "form": {
+      "title": "Booking Details",
+      "description": "All sessions are confidential and free of charge.",
+      "dateLabel": "1. Select a Date",
+      "datePlaceholder": "Pick a date",
+      "timeLabel": "2. Select a Time",
+      "infoLabel": "3. Your Information",
+      "nameLabel": "Full Name",
+      "namePlaceholder": "John Doe",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "john.doe@example.com",
+      "submitButton": "Confirm Appointment"
+    },
+    "toast": {
+      "incomplete": {
+        "title": "Incomplete Form",
+        "description": "Please fill out all fields to schedule your session."
+      },
+      "failed": {
+        "title": "Scheduling Failed",
+        "description": "There was an error saving your appointment. Please try again."
+      }
+    },
+    "success": {
+      "title": "Session Scheduled!",
+      "thankYou": "Thank you for reaching out, {{name}}.",
+      "confirmation": "Your counseling session is confirmed for {{date}} at {{time}}.",
+      "emailConfirmation": "A confirmation email has been sent to {{email}}.",
+      "scheduleAnother": "Schedule Another",
+      "viewSessions": "View My Sessions"
+    }
+  },
+  "mySessions": {
+    "title": "My Scheduled Sessions",
+    "description": "Here is a list of your upcoming appointments. You can manage or cancel them here.",
+    "loading": "Loading sessions...",
+    "noSessions": {
+      "title": "No Sessions Found",
+      "description": "You haven't scheduled any sessions yet.",
+      "button": "Schedule a Session"
+    },
+    "card": {
+      "details": "Appointment Details",
+      "cancelButton": "Cancel Session"
+    },
+    "dialog": {
+      "title": "Are you sure?",
+      "description": "This action cannot be undone. This will permanently cancel your counseling session.",
+      "cancel": "Go Back",
+      "confirm": "Yes, Cancel Session"
+    },
+    "toast": {
+      "loadError": {
+        "title": "Error",
+        "description": "Could not load your scheduled sessions."
+      },
+      "cancelSuccess": {
+        "title": "Session Cancelled",
+        "description": "Your appointment has been successfully cancelled."
+      }
+    }
+  },
+  "chat": {
+    "title": "Peer Support Chat",
+    "description": "Chat with Alex, a trained peer supporter who is here to listen.",
+    "inputPlaceholder": "Type your message...",
+    "send": "Send"
+  }
+}

@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, Clock, Trash2, User } from "lucide-react";
+import { Clock, Trash2, User } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface Appointment {
   id: string;
@@ -38,6 +39,7 @@ export default function MySessionsPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     try {
@@ -49,28 +51,28 @@ export default function MySessionsPage() {
       console.error("Failed to load sessions from local storage", error);
        toast({
         variant: "destructive",
-        title: "Error",
-        description: "Could not load your scheduled sessions.",
+        title: t('mySessions.toast.loadError.title'),
+        description: t('mySessions.toast.loadError.description'),
       });
     } finally {
         setIsLoading(false);
     }
-  }, [toast]);
+  }, [t, toast]);
 
   const cancelSession = (sessionId: string) => {
     const updatedSessions = sessions.filter((session) => session.id !== sessionId);
     localStorage.setItem("scheduledSessions", JSON.stringify(updatedSessions));
     setSessions(updatedSessions);
     toast({
-        title: "Session Cancelled",
-        description: "Your appointment has been successfully cancelled.",
+        title: t('mySessions.toast.cancelSuccess.title'),
+        description: t('mySessions.toast.cancelSuccess.description'),
       });
   };
   
   if (isLoading) {
     return (
         <div className="container mx-auto px-4 py-8 md:py-12 text-center">
-            <p>Loading sessions...</p>
+            <p>{t('mySessions.loading')}</p>
         </div>
     )
   }
@@ -80,23 +82,22 @@ export default function MySessionsPage() {
     <div className="container mx-auto px-4 py-8 md:py-12">
       <div className="space-y-4 text-center mb-12">
         <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
-          My Scheduled Sessions
+          {t('mySessions.title')}
         </h1>
         <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl">
-          Here is a list of your upcoming appointments. You can manage or cancel
-          them here.
+          {t('mySessions.description')}
         </p>
       </div>
 
       {sessions.length === 0 ? (
         <Card className="w-full max-w-md mx-auto text-center py-12">
              <CardHeader>
-                <CardTitle>No Sessions Found</CardTitle>
-                <CardDescription>You haven't scheduled any sessions yet.</CardDescription>
+                <CardTitle>{t('mySessions.noSessions.title')}</CardTitle>
+                <CardDescription>{t('mySessions.noSessions.description')}</CardDescription>
              </CardHeader>
              <CardContent>
                 <Button asChild>
-                    <Link href="/schedule">Schedule a Session</Link>
+                    <Link href="/schedule">{t('mySessions.noSessions.button')}</Link>
                 </Button>
              </CardContent>
         </Card>
@@ -108,7 +109,7 @@ export default function MySessionsPage() {
                 <CardTitle className="font-headline text-xl">
                   {format(new Date(session.date), "EEEE, MMMM do")}
                 </CardTitle>
-                <CardDescription>Appointment Details</CardDescription>
+                <CardDescription>{t('mySessions.card.details')}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-3">
                  <div className="flex items-center gap-3">
@@ -125,21 +126,20 @@ export default function MySessionsPage() {
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Cancel Session
+                      {t('mySessions.card.cancelButton')}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogTitle>{t('mySessions.dialog.title')}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. This will permanently cancel your
-                        counseling session.
+                        {t('mySessions.dialog.description')}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Go Back</AlertDialogCancel>
+                      <AlertDialogCancel>{t('mySessions.dialog.cancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => cancelSession(session.id)}>
-                        Yes, Cancel Session
+                        {t('mySessions.dialog.confirm')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

@@ -2,21 +2,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Globe, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/common/logo";
+import { useTranslation } from "@/hooks/use-translation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navLinks = [
-  { href: "/", label: "AI Analyzer" },
-  { href: "/resources", label: "Resources" },
-  { href: "/schedule", label: "Schedule Session" },
-  { href: "/my-sessions", label: "My Sessions" },
-  { href: "/chat", label: "Peer Chat" },
+  { href: "/", label: "nav.analyzer" },
+  { href: "/resources", label: "nav.resources" },
+  { href: "/schedule", label: "nav.schedule" },
+  { href: "/my-sessions", label: "nav.mySessions" },
+  { href: "/chat", label: "nav.chat" },
 ];
 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
+  const { t, setLanguage } = useTranslation();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -32,6 +40,22 @@ export function MobileNav() {
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b pb-4">
                 <Logo />
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Globe className="h-5 w-5" />
+                        <span className="sr-only">Change language</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => {setLanguage("en"); setIsOpen(false);}}>
+                        English
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {setLanguage("hi"); setIsOpen(false);}}>
+                        हिंदी (Hindi)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu">
                   <X className="h-6 w-6" />
                 </Button>
@@ -44,7 +68,7 @@ export function MobileNav() {
                     className="text-lg font-medium text-foreground hover:text-primary"
                     onClick={() => setIsOpen(false)}
                   >
-                    {link.label}
+                    {t(link.label)}
                   </Link>
                 ))}
               </nav>

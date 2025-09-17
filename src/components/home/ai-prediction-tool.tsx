@@ -29,10 +29,11 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/use-translation";
 
-const formSchema = z.object({
+const formSchema = (t: (key: string) => string) => z.object({
   text: z.string().min(50, {
-    message: "Please enter at least 50 characters to get an accurate analysis.",
+    message: t('analyzer.form.validation.minLength'),
   }),
 });
 
@@ -40,15 +41,16 @@ export function AIPredictionTool() {
   const [result, setResult] = useState<GenerateRiskScoreOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<ReturnType<typeof formSchema>>>({
+    resolver: zodResolver(formSchema(t)),
     defaultValues: {
       text: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<ReturnType<typeof formSchema>>) {
     setIsLoading(true);
     setResult(null);
     try {
@@ -58,8 +60,8 @@ export function AIPredictionTool() {
       console.error("AI risk score generation failed:", error);
       toast({
         variant: "destructive",
-        title: "Analysis Failed",
-        description: "There was an error analyzing the text. Please try again.",
+        title: t('analyzer.toast.error.title'),
+        description: t('analyzer.toast.error.description'),
       });
     } finally {
       setIsLoading(false);
@@ -77,7 +79,7 @@ export function AIPredictionTool() {
       <CardHeader className="text-center">
         <CardTitle className="font-headline text-2xl md:text-3xl flex items-center justify-center gap-2">
           <Sparkles className="h-8 w-8 text-primary" />
-          AI Mental Health Analyzer
+          {t('analyzer.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-8">
@@ -89,11 +91,11 @@ export function AIPredictionTool() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-lg">
-                    Share your thoughts
+                    {t('analyzer.form.label')}
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe how you've been feeling lately, what's on your mind, or any challenges you're facing..."
+                      placeholder={t('analyzer.form.placeholder')}
                       className="min-h-[150px] text-base"
                       {...field}
                     />
@@ -106,10 +108,10 @@ export function AIPredictionTool() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  {t('analyzer.form.button.loading')}
                 </>
               ) : (
-                "Analyze My Text"
+                t('analyzer.form.button.default')
               )}
             </Button>
           </form>
@@ -120,7 +122,7 @@ export function AIPredictionTool() {
             <Card className="md:col-span-1 flex flex-col items-center justify-center bg-secondary/50">
               <CardHeader>
                 <CardTitle className="text-center text-xl">
-                  Risk Score
+                  {t('analyzer.result.riskScore.title')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-grow flex items-center justify-center w-full h-[200px]">
@@ -172,7 +174,7 @@ export function AIPredictionTool() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl">
                     <Lightbulb className="text-primary" />
-                    Explanation
+                    {t('analyzer.result.explanation.title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -184,14 +186,14 @@ export function AIPredictionTool() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl text-accent-foreground">
                     <AlertTriangle className="text-accent-foreground" />
-                    Suggested Actions
+                    {t('analyzer.result.actions.title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-accent-foreground/90">{result.suggestedActions}</p>
                   {result.riskScore > 40 && (
                      <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                        <Link href="/schedule">Schedule a Counseling Session</Link>
+                        <Link href="/schedule">{t('analyzer.result.actions.button')}</Link>
                      </Button>
                   )}
                 </CardContent>

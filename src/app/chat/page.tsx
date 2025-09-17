@@ -4,19 +4,21 @@ import {useState, useRef, useEffect, type FormEvent} from 'react';
 import {peerSupportChat} from '@/ai/flows/peer-chat';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Card, CardContent} from '@/components/ui/card';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {Send, User} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import type {Message} from '@/lib/types';
-import {readStreamableValue} from 'ai/rsc';
+import {createStreamableValue, readStreamableValue} from 'ai/rsc';
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -32,14 +34,20 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const stream = await peerSupportChat({
+      const streamable = createStreamableValue();
+      peerSupportChat({
         history: newMessages.map(m => ({role: m.role, content: m.content})),
+      }).then(async res => {
+        for await (const delta of readStreamableValue(res)) {
+          streamable.update(delta);
+        }
+        streamable.done();
       });
 
       let assistantResponse = '';
       setMessages(prev => [...prev, {role: 'model', content: ''}]);
-
-      for await (const delta of readStreamableValue(stream)) {
+      
+      for await (const delta of readStreamableValue(streamable.value)) {
         assistantResponse += delta;
         setMessages(prev => {
           const lastMessage = prev[prev.length - 1];
@@ -72,10 +80,10 @@ export default function ChatPage() {
     <div className="container mx-auto flex h-[calc(100vh-6rem)] max-h-full flex-col px-4 py-8 md:py-12">
       <div className="space-y-2 text-center mb-8">
         <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl">
-          Peer Support Chat
+          {t('chat.title')}
         </h1>
         <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl">
-          Chat with Alex, a trained peer supporter who is here to listen.
+          {t('chat.description')}
         </p>
       </div>
 
@@ -138,13 +146,13 @@ export default function ChatPage() {
               <Input
                 value={input}
                 onChange={handleInputChange}
-                placeholder="Type your message..."
+                placeholder={t('chat.inputPlaceholder')}
                 className="flex-1"
                 disabled={isLoading}
               />
               <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
                 <Send className="h-5 w-5" />
-                <span className="sr-only">Send</span>
+                <span className="sr-only">{t('chat.send')}</span>
               </Button>
             </form>
           </div>

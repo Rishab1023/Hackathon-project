@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Globe, Menu, X } from "lucide-react";
+import { Globe, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -30,16 +30,14 @@ export function MobileNav({ navLinks }: MobileNavProps) {
   return (
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Open menu">
+          <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-6 w-6" />
+            <span className="sr-only">Open menu</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="right">
-          <SheetHeader className="flex-row items-center justify-between">
+          <SheetHeader>
               <Logo />
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu">
-                <X className="h-6 w-6" />
-              </Button>
           </SheetHeader>
           <div className="flex h-full flex-col mt-8">
             <nav className="flex flex-col space-y-4">

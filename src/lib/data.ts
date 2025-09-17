@@ -40,7 +40,7 @@ export const resources: Resource[] = [
     id: "3",
     name: "Youth Help Line",
     category: "National",
-    description: "The world's largest suicide prevention and crisis intervention organization for young people.",
+    description: "A leading national organization providing crisis intervention and suicide prevention services to young people.",
     services: [
       "24/7 Call, Text & Chat",
       "Online Community",
@@ -48,7 +48,7 @@ export const resources: Resource[] = [
     ],
     contact: {
       phone: "1-866-488-7386",
-      website: "thetrevorproject.org",
+      website: "youthhelpline.org",
     },
     icon: Heart,
   },

@@ -68,7 +68,8 @@ export default function SchedulePage() {
       if (storedAnalysis) {
         const { riskScore: score, priority } = JSON.parse(storedAnalysis);
         setRiskScore(score);
-        if (priority) {
+        // Only set priority if the flag is explicitly true
+        if (priority === true) {
           setIsPriority(true);
         }
       }

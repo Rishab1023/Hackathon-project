@@ -14,11 +14,11 @@ export default function Home() {
           <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
             {t('home.title')}
           </h1>
-          <p className="max-w-[600px] text-muted-foreground md:text-xl">
+          <p className="max-w-[600px] mx-auto md:mx-0 text-muted-foreground md:text-xl">
             {t('home.description')}
           </p>
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center order-first md:order-last">
           <Image
             src="https://picsum.photos/seed/mindbloom-hero/600/400"
             alt={t('home.heroAlt')}

@@ -1,35 +1,14 @@
-"use client";
-
 import { resources } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, Globe, Loader2 } from "lucide-react";
+import { Phone, Mail, Globe } from "lucide-react";
 import Link from "next/link";
-import { useTranslation } from "@/hooks/use-translation";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import { incrementResourceClickCount } from "@/lib/firestore";
+import { getTranslations } from "@/lib/get-translation";
+import ResourceLink from "./_components/resource-link";
 
-export default function ResourcesPage() {
-  const { t, language } = useTranslation();
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+export default async function ResourcesPage() {
+  const t = await getTranslations();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
-
-  const handleResourceClick = (resourceId: string) => {
-    try {
-      incrementResourceClickCount(resourceId);
-    } catch (error) {
-      console.error("Failed to save resource click count", error);
-    }
-  };
-  
   const translatedResources = resources.map(resource => {
     const translationKey = `resources.list.${resource.id}`;
     return {
@@ -40,13 +19,6 @@ export default function ResourcesPage() {
     };
   });
 
-  if (authLoading || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -95,15 +67,17 @@ export default function ResourcesPage() {
                 {resource.contact.email && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Mail className="h-4 w-4" />
-                    <a href={`mailto:${resource.contact.email}`} className="hover:text-primary" onClick={() => handleResourceClick(resource.id)}>{resource.contact.email}</a>
+                     <ResourceLink type="email" id={resource.id} href={`mailto:${resource.contact.email}`}>
+                        {resource.contact.email}
+                    </ResourceLink>
                   </div>
                 )}
                 {resource.contact.website && (
                   <div className="flex items-start gap-2 text-sm text-muted-foreground">
                     <Globe className="h-4 w-4 mt-1" />
-                    <Link href={resource.contact.website.startsWith('http') ? resource.contact.website : `https://${resource.contact.website}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary break-all" onClick={() => handleResourceClick(resource.id)}>
-                      {resource.contact.website}
-                    </Link>
+                    <ResourceLink type="website" id={resource.id} href={resource.contact.website} target="_blank" rel="noopener noreferrer">
+                        {resource.contact.website}
+                    </ResourceLink>
                   </div>
                 )}
               </div>

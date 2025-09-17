@@ -16,6 +16,16 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 
 const translations = { en, hi };
 
+function setCookie(name: string, value: string, days: number) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState<Language>("en");
 
@@ -29,11 +39,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("language", lang);
+    setCookie("language", lang, 7);
     if (lang === 'hi') {
       document.body.style.fontFamily = '"Hind", sans-serif';
     } else {
       document.body.style.fontFamily = '"PT Sans", sans-serif';
     }
+     // Reload to apply server-side translations
+    window.location.reload();
   };
 
   const t = useCallback((key: string, replacements?: { [key: string]: string }) => {

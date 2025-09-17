@@ -29,23 +29,13 @@ interface MobileNavProps {
 export function MobileNav({ navLinks }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { t, setLanguage, language } = useTranslation();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLinkClick = () => setIsOpen(false);
   const handleLogout = () => {
     logout();
     handleLinkClick();
   }
-
-  const visibleNavLinks = navLinks.filter(link => {
-    if (link.admin) {
-      return user && isAdmin;
-    }
-    if (link.auth) {
-      return !!user;
-    }
-    return true;
-  });
 
   return (
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -61,7 +51,7 @@ export function MobileNav({ navLinks }: MobileNavProps) {
           </SheetHeader>
           <div className="flex h-full flex-col mt-8">
             <nav className="flex flex-col space-y-4">
-              {visibleNavLinks.map((link) => (
+              {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -9,46 +9,29 @@ import {
 } from "@/components/ui/card";
 import { useTranslation } from "@/hooks/use-translation";
 import { Users } from "lucide-react";
-import { updateActiveUsers, leaveActiveUsers } from "@/app/actions/update-active-users";
+
+// Mock implementation since Vercel KV is removed.
+function useActiveUsers() {
+    const [activeUsers, setActiveUsers] = useState(1);
+
+    useEffect(() => {
+        // In a real app, you might use WebSockets or another method.
+        // For now, we'll just show a static number.
+        const interval = setInterval(() => {
+            // Fluctuate the number slightly for demo purposes
+            setActiveUsers(prev => (prev > 1 ? prev - 1 : 1) + Math.floor(Math.random() * 2));
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return activeUsers;
+}
+
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
-  const [activeUsers, setActiveUsers] = useState(1);
-  const userIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    userIdRef.current = "user_" + Math.random().toString(36).substr(2, 9);
-    const userId = userIdRef.current;
-
-    const updateUser = async () => {
-       try {
-          const data = await updateActiveUsers(userId);
-          setActiveUsers(data.count);
-        } catch (error) {
-          console.error("Failed to update active users:", error);
-        }
-    }
-
-    updateUser();
-    const interval = setInterval(updateUser, 5000);
-
-    const handleBeforeUnload = () => {
-      if (userId) {
-        // Use sendBeacon as it's more reliable for leaving pages
-        navigator.sendBeacon('/api/leave', JSON.stringify({ userId }));
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (userId) {
-        leaveActiveUsers(userId);
-      }
-    };
-  }, []);
+  const activeUsers = useActiveUsers();
 
   return (
       <Card>

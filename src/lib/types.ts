@@ -26,3 +26,10 @@ export interface Appointment {
   riskScore?: number;
   userId?: string;
 }
+
+// Mock User for local storage auth
+export interface MockUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +25,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, login } = useAuth();
 
   useEffect(() => {
     if (!loading && user) {
@@ -47,23 +45,22 @@ export default function SignupPage() {
       return;
     }
     setIsLoading(true);
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
+
+    if (email) {
+      login(email);
       router.push("/");
        toast({
         title: "Account Created",
         description: "You have been successfully signed up.",
       });
-    } catch (error: any) {
-      console.error("Signup failed", error);
+    } else {
        toast({
         variant: "destructive",
         title: "Sign Up Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: "Please enter a valid email.",
       });
-    } finally {
-        setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
   if (loading || user) {

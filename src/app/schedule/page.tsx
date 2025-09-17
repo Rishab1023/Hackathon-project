@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -37,8 +36,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/auth/auth-guard";
-import { db } from "@/lib/firebase";
-import { ref, get, push, set } from "firebase/database";
+
+const SESSIONS_STORAGE_KEY = "mindbloom-sessions";
 
 const availableTimes = [
   "09:00 AM",
@@ -60,27 +59,22 @@ export default function SchedulePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [email, setEmail] = useState("");
 
-
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user } = useAuth();
   
   const getScheduledSessions = useCallback(async (): Promise<Appointment[]> => {
-    const sessionsRef = ref(db, 'sessions');
-    const snapshot = await get(sessionsRef);
-    if (snapshot.exists()) {
-      const sessionsData = snapshot.val();
-      return Object.keys(sessionsData).map(key => ({ id: key, ...sessionsData[key] } as Appointment));
-    }
-    return [];
+    return JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
   }, []);
 
   const addScheduledSession = useCallback(async (session: Omit<Appointment, 'id'>): Promise<string> => {
-    const sessionsRef = ref(db, 'sessions');
-    const newSessionRef = push(sessionsRef);
-    await set(newSessionRef, session);
-    return newSessionRef.key!;
-  }, []);
+    const allSessions = await getScheduledSessions();
+    const newId = "session_" + new Date().getTime();
+    const newSessionWithId = { ...session, id: newId };
+    const updatedSessions = [...allSessions, newSessionWithId];
+    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updatedSessions));
+    return newId;
+  }, [getScheduledSessions]);
   
   const getBookedTimesForDate = useCallback((selectedDate: Date | undefined) => {
     if (!selectedDate) return [];
@@ -90,45 +84,40 @@ export default function SchedulePage() {
   }, [allSessions]);
   
   useEffect(() => {
-    if (!user) return;
-    
-    async function fetchSessions() {
-        try {
-            const sessions = await getScheduledSessions();
-            setAllSessions(sessions);
-        } catch (error) {
-            console.error("Failed to fetch sessions from Realtime Database", error);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Could not load session data. Please try again later.",
-            });
-        } finally {
-            setIsLoading(false);
+    async function fetchAndSetInitialData() {
+      setIsLoading(true);
+      try {
+        const sessions = await getScheduledSessions();
+        setAllSessions(sessions);
+        
+        const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
+        if (storedAnalysis) {
+          const { riskScore: score, priority } = JSON.parse(storedAnalysis);
+          setRiskScore(score);
+          if (priority) {
+            setIsPriority(true);
+          }
         }
+        
+        if (user) {
+          setName(user.displayName || "");
+          setEmail(user.email || "");
+        }
+        
+      } catch (error) {
+        console.error("Failed to load initial data", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load session data. Please try again later.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
     
-    fetchSessions();
+    fetchAndSetInitialData();
 
-    try {
-      const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
-      if (storedAnalysis) {
-        const { riskScore: score, priority } = JSON.parse(storedAnalysis);
-        setRiskScore(score);
-        if (user.displayName) {
-          setName(user.displayName);
-        }
-        if (priority) {
-          setIsPriority(true);
-        }
-      }
-      if(user.email) {
-        setEmail(user.email);
-      }
-
-    } catch (error) {
-      console.error("Failed to load data from local storage", error);
-    }
   }, [user, toast, getScheduledSessions]);
 
 
@@ -159,7 +148,6 @@ export default function SchedulePage() {
         setDate(earliestSlot.date);
         setSelectedTime(earliestSlot.time);
       } else {
-        // Handle case where no slots are available in the next 30 days
          toast({
             variant: "destructive",
             title: "No appointments available",
@@ -199,7 +187,7 @@ export default function SchedulePage() {
         localStorage.removeItem("latestRiskAnalysis");
         setIsSubmitted(true);
     } catch (error) {
-        console.error("Failed to save session to Realtime Database", error);
+        console.error("Failed to save session to local storage", error);
         toast({
             variant: "destructive",
             title: t('schedule.toast.failed.title'),

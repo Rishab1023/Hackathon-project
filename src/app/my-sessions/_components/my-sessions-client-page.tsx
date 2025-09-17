@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -30,8 +29,9 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { ref, query, orderByChild, equalTo, get, remove } from "firebase/database";
+
+// Local storage key for sessions
+const SESSIONS_STORAGE_KEY = "mindbloom-sessions";
 
 export default function MySessionsClientPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -42,20 +42,34 @@ export default function MySessionsClientPage() {
   const router = useRouter();
 
   const getMyScheduledSessions = useCallback(async (userId: string): Promise<Appointment[]> => {
-    const sessionsRef = ref(db, 'sessions');
-    const userSessionsQuery = query(sessionsRef, orderByChild('userId'), equalTo(userId));
-    const snapshot = await get(userSessionsQuery);
-    if (snapshot.exists()) {
-      const sessionsData = snapshot.val();
-      return Object.keys(sessionsData).map(key => ({ id: key, ...sessionsData[key] } as Appointment));
-    }
-    return [];
+    const allSessions = JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
+    return allSessions.filter(session => session.userId === userId);
   }, []);
 
   const deleteScheduledSession = useCallback(async (sessionId: string): Promise<void> => {
-    const sessionRef = ref(db, `sessions/${sessionId}`);
-    await remove(sessionRef);
+    let allSessions = JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
+    const updatedSessions = allSessions.filter(session => session.id !== sessionId);
+    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updatedSessions));
   }, []);
+
+
+  const fetchSessions = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const userSessions = await getMyScheduledSessions(user.uid);
+      setSessions(userSessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+    } catch (error) {
+      console.error("Failed to load sessions from local storage", error);
+      toast({
+          variant: "destructive",
+          title: t('mySessions.toast.loadError.title'),
+          description: t('mySessions.toast.loadError.description'),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, getMyScheduledSessions, toast, t]);
 
 
   useEffect(() => {
@@ -65,24 +79,8 @@ export default function MySessionsClientPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (!user) return;
-    async function fetchSessions() {
-        try {
-            const userSessions = await getMyScheduledSessions(user.uid);
-            setSessions(userSessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
-        } catch (error) {
-            console.error("Failed to load sessions from Realtime Database", error);
-            toast({
-                variant: "destructive",
-                title: t('mySessions.toast.loadError.title'),
-                description: t('mySessions.toast.loadError.description'),
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    }
     fetchSessions();
-  }, [user, t, toast, getMyScheduledSessions]);
+  }, [fetchSessions]);
 
   const cancelSession = async (sessionId: string) => {
     try {
@@ -91,7 +89,8 @@ export default function MySessionsClientPage() {
             title: t('mySessions.toast.cancelSuccess.title'),
             description: t('mySessions.toast.cancelSuccess.description'),
         });
-        window.location.reload();
+        // Refetch sessions to update UI
+        await fetchSessions();
     } catch (error) {
         console.error("Failed to cancel session", error);
         toast({

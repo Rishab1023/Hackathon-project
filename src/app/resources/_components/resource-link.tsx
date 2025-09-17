@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { db } from "@/lib/firebase";
-import { ref, runTransaction, serverTimestamp } from "firebase/database";
 
+const RESOURCE_ANALYTICS_KEY = "mindbloom-resource-analytics";
 
 interface ResourceLinkProps {
     id: string;
@@ -17,22 +16,13 @@ interface ResourceLinkProps {
 export default function ResourceLink({ id, href, children, type, ...props }: ResourceLinkProps) {
   
   const incrementResourceClickCount = async (resourceId: string): Promise<void> => {
-    const resourceAnalyticsRef = ref(db, `analytics/resources`);
     try {
-      await runTransaction(resourceAnalyticsRef, (currentData) => {
-        if (currentData) {
-          currentData.totalClicks = (currentData.totalClicks || 0) + 1;
-          currentData[resourceId] = (currentData[resourceId] || 0) + 1;
-        } else {
-          currentData = {
-            totalClicks: 1,
-            [resourceId]: 1,
-          };
-        }
-        return currentData;
-      });
+      const analytics = JSON.parse(localStorage.getItem(RESOURCE_ANALYTICS_KEY) || "{}");
+      analytics.totalClicks = (analytics.totalClicks || 0) + 1;
+      analytics[resourceId] = (analytics[resourceId] || 0) + 1;
+      localStorage.setItem(RESOURCE_ANALYTICS_KEY, JSON.stringify(analytics));
     } catch (e) {
-      console.error("Transaction failed: ", e);
+      console.error("Failed to update resource analytics in local storage: ", e);
     }
   }
 

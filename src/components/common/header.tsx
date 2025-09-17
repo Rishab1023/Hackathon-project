@@ -114,7 +114,7 @@ export function Header() {
             )}
             </nav>
             <div className="md:hidden">
-              <MobileNav navLinks={navLinks} />
+              <MobileNav navLinks={visibleNavLinks} />
             </div>
         </div>
       </div>

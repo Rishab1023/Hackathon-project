@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +24,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, login } = useAuth();
 
   useEffect(() => {
     if (!loading && user) {
@@ -37,23 +35,24 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
+    
+    // Mock login logic
+    if (email) {
+      login(email);
       router.push("/");
-       toast({
+      toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
-    } catch (error: any) {
-      console.error("Login failed", error);
-      toast({
+    } else {
+       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: "Please enter a valid email.",
       });
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   if (loading || user) {

@@ -16,7 +16,7 @@ import { BarChart, BookOpen, CalendarCheck, Users, Activity, Loader2 } from "luc
 import { updateActiveUsers, leaveActiveUsers } from "@/app/actions/update-active-users";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-
+import { getScheduledSessions, getResourceClickCount } from "@/lib/firestore";
 
 export default function AdminDashboardPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -46,13 +46,14 @@ export default function AdminDashboardPage() {
 
     const fetchData = async () => {
       try {
-        const storedSessions = localStorage.getItem("scheduledSessions");
-        if (storedSessions) {
-          const parsedSessions = JSON.parse(storedSessions) as Appointment[];
-          setSessions(parsedSessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        }
-        const resourceCount = JSON.parse(localStorage.getItem("resourceClickCount") || "0");
+        const [firestoreSessions, resourceCount] = await Promise.all([
+          getScheduledSessions(),
+          getResourceClickCount()
+        ]);
+        
+        setSessions(firestoreSessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         setTotalResources(resourceCount);
+
         if (userIdRef.current) {
             const data = await updateActiveUsers(userIdRef.current);
             setActiveUsers(data.count);
@@ -94,7 +95,7 @@ export default function AdminDashboardPage() {
     };
   }, [user, isAdmin]);
 
-  if (authLoading || !user || !isAdmin) {
+  if (authLoading || !user || !isAdmin || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

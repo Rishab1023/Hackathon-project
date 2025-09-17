@@ -29,7 +29,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-
+import { getMyScheduledSessions, deleteScheduledSession } from "@/lib/firestore";
 
 export default function MySessionsPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -47,31 +47,41 @@ export default function MySessionsPage() {
 
   useEffect(() => {
     if (!user) return;
-    try {
-      const storedSessions = localStorage.getItem("scheduledSessions");
-      if (storedSessions) {
-        setSessions(JSON.parse(storedSessions));
-      }
-    } catch (error) {
-      console.error("Failed to load sessions from local storage", error);
-       toast({
-        variant: "destructive",
-        title: t('mySessions.toast.loadError.title'),
-        description: t('mySessions.toast.loadError.description'),
-      });
-    } finally {
-        setIsLoading(false);
+    async function fetchSessions() {
+        try {
+            const userSessions = await getMyScheduledSessions(user.uid);
+            setSessions(userSessions);
+        } catch (error) {
+            console.error("Failed to load sessions from Firestore", error);
+            toast({
+                variant: "destructive",
+                title: t('mySessions.toast.loadError.title'),
+                description: t('mySessions.toast.loadError.description'),
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
-  }, [t, toast, user]);
+    fetchSessions();
+  }, [user, t, toast]);
 
-  const cancelSession = (sessionId: string) => {
-    const updatedSessions = sessions.filter((session) => session.id !== sessionId);
-    localStorage.setItem("scheduledSessions", JSON.stringify(updatedSessions));
-    setSessions(updatedSessions);
-    toast({
-        title: t('mySessions.toast.cancelSuccess.title'),
-        description: t('mySessions.toast.cancelSuccess.description'),
-      });
+  const cancelSession = async (sessionId: string) => {
+    try {
+        await deleteScheduledSession(sessionId);
+        const updatedSessions = sessions.filter((session) => session.id !== sessionId);
+        setSessions(updatedSessions);
+        toast({
+            title: t('mySessions.toast.cancelSuccess.title'),
+            description: t('mySessions.toast.cancelSuccess.description'),
+        });
+    } catch (error) {
+        console.error("Failed to cancel session", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to cancel the session. Please try again.",
+        });
+    }
   };
   
   if (authLoading || isLoading || !user) {

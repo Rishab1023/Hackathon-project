@@ -36,6 +36,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { addScheduledSession, getScheduledSessions } from "@/lib/firestore";
 
 const availableTimes = [
   "09:00 AM",
@@ -50,11 +51,11 @@ export default function SchedulePage() {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [allSessions, setAllSessions] = useState<Appointment[]>([]);
   const [isPriority, setIsPriority] = useState(false);
   const [riskScore, setRiskScore] = useState<number | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -74,20 +75,34 @@ export default function SchedulePage() {
       .filter(session => format(new Date(session.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
       .map(session => session.time);
   }, [allSessions]);
-
+  
   useEffect(() => {
     if (!user) return;
+    
+    async function fetchSessions() {
+        try {
+            const sessions = await getScheduledSessions();
+            setAllSessions(sessions);
+        } catch (error) {
+            console.error("Failed to fetch sessions from Firestore", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not load session data. Please try again later.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    
+    fetchSessions();
+
     try {
-      const storedSessions = localStorage.getItem("scheduledSessions");
-      if (storedSessions) {
-        const parsedSessions = JSON.parse(storedSessions);
-        setAllSessions(parsedSessions);
-      }
-      
       const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
       if (storedAnalysis) {
         const { riskScore: score, priority } = JSON.parse(storedAnalysis);
         setRiskScore(score);
+        setName(user.displayName || "");
         if (priority) {
           setIsPriority(true);
         }
@@ -96,7 +111,16 @@ export default function SchedulePage() {
     } catch (error) {
       console.error("Failed to load data from local storage", error);
     }
-  }, [user]);
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (user?.email && !name) {
+        setEmail(user.email);
+    }
+  }, [user, name]);
+
+  const [email, setEmail] = useState(user?.email || "");
+
 
   useEffect(() => {
     if (isPriority && allSessions.length > 0) {
@@ -137,9 +161,9 @@ export default function SchedulePage() {
   }, [isPriority, allSessions, getBookedTimesForDate, toast]);
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!date || !selectedTime || !name || !email) {
+    if (!date || !selectedTime || !name || !email || !user) {
       toast({
         variant: "destructive",
         title: t('schedule.toast.incomplete.title'),
@@ -148,24 +172,21 @@ export default function SchedulePage() {
       return;
     }
     
-    const newAppointment: Appointment = {
-      id: new Date().toISOString(),
+    const newAppointment: Omit<Appointment, 'id'> = {
       name,
       email,
       date: date.toISOString(),
       time: selectedTime,
       riskScore: riskScore,
+      userId: user.uid,
     };
     
     try {
-        const updatedSessions = [...allSessions, newAppointment];
-        localStorage.setItem("scheduledSessions", JSON.stringify(updatedSessions));
-        setAllSessions(updatedSessions);
-        
+        await addScheduledSession(newAppointment);
         localStorage.removeItem("latestRiskAnalysis");
         setIsSubmitted(true);
     } catch (error) {
-        console.error("Failed to save session to local storage", error);
+        console.error("Failed to save session to Firestore", error);
         toast({
             variant: "destructive",
             title: t('schedule.toast.failed.title'),
@@ -184,7 +205,6 @@ export default function SchedulePage() {
     setDate(undefined);
     setSelectedTime(undefined);
     setName("");
-    setEmail("");
     setRiskScore(undefined);
     setIsPriority(false);
     setIsSubmitted(false);
@@ -192,7 +212,7 @@ export default function SchedulePage() {
 
   const bookedTimes = getBookedTimesForDate(date);
 
-  if (authLoading || !user) {
+  if (authLoading || isLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -327,7 +347,7 @@ export default function SchedulePage() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">{t('schedule.form.emailLabel')}</Label>
-                        <Input id="email" type="email" placeholder={t('schedule.form.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
+                        <Input id="email" type="email" placeholder={t('schedule.form.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required disabled />
                     </div>
                 </div>
             </div>
@@ -342,5 +362,3 @@ export default function SchedulePage() {
     </div>
   );
 }
-
-    

@@ -24,4 +24,5 @@ export interface Appointment {
   date: string;
   time: string;
   riskScore?: number;
+  userId?: string;
 }

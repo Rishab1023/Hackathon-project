@@ -9,11 +9,10 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-
+import { incrementResourceClickCount } from "@/lib/firestore";
 
 export default function ResourcesPage() {
   const { t, language } = useTranslation();
-  const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -23,23 +22,9 @@ export default function ResourcesPage() {
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    if (!user) return;
-    try {
-      const storedCounts = localStorage.getItem("resourceClickCount");
-      if (storedCounts) {
-        setClickCounts(JSON.parse(storedCounts));
-      }
-    } catch (error) {
-      console.error("Failed to load resource click counts", error);
-    }
-  }, [user]);
-
   const handleResourceClick = (resourceId: string) => {
     try {
-      const newCounts = { ...clickCounts, [resourceId]: (clickCounts[resourceId] || 0) + 1 };
-      setClickCounts(newCounts);
-      localStorage.setItem("resourceClickCount", JSON.stringify(Object.values(newCounts).reduce((a,b) => a+b, 0)));
+      incrementResourceClickCount(resourceId);
     } catch (error) {
       console.error("Failed to save resource click count", error);
     }

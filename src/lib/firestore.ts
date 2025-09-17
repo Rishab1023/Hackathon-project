@@ -9,6 +9,7 @@ import {
   getDoc,
   setDoc,
   runTransaction,
+  FirestoreError,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Appointment } from "./types";
@@ -20,9 +21,18 @@ const ANALYTICS_COLLECTION = "analytics";
 
 // Get all scheduled sessions (for admin)
 export async function getScheduledSessions(): Promise<Appointment[]> {
-  const q = query(collection(db, SESSIONS_COLLECTION));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Appointment));
+  try {
+    const q = query(collection(db, SESSIONS_COLLECTION));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Appointment));
+  } catch (error) {
+    if (error instanceof FirestoreError && error.code === 'permission-denied') {
+      console.error("Firestore permission denied. Please ensure the Firestore API is enabled in your Google Cloud project and that your security rules allow access.");
+      return []; // Return empty array to prevent app crash
+    }
+    console.error("Failed to get scheduled sessions:", error);
+    throw error; // Re-throw other errors
+  }
 }
 
 // Get sessions for a specific user
@@ -72,9 +82,18 @@ export async function incrementResourceClickCount(resourceId: string): Promise<v
 
 // Get the total resource click count
 export async function getResourceClickCount(): Promise<number> {
-  const docSnap = await getDoc(resourceAnalyticsDocRef);
-  if (docSnap.exists()) {
-    return docSnap.data().totalClicks || 0;
+  try {
+    const docSnap = await getDoc(resourceAnalyticsDocRef);
+    if (docSnap.exists()) {
+      return docSnap.data().totalClicks || 0;
+    }
+    return 0;
+  } catch (error) {
+     if (error instanceof FirestoreError && error.code === 'permission-denied') {
+      console.error("Firestore permission denied. Please ensure the Firestore API is enabled in your Google Cloud project and that your security rules allow access.");
+      return 0; // Return 0 to prevent app crash
+    }
+    console.error("Failed to get resource click count:", error);
+    throw error; // Re-throw other errors
   }
-  return 0;
 }

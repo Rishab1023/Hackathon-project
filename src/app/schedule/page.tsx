@@ -319,7 +319,7 @@ export default function SchedulePage() {
                             value={time}
                             id={time}
                             className="peer sr-only"
-                            disabled={isBooked || isPriority}
+                            disabled={isBooked || (isPriority && time !== selectedTime)}
                           />
                           <Label
                             htmlFor={time}
@@ -361,5 +361,3 @@ export default function SchedulePage() {
     </div>
   );
 }
-
-    

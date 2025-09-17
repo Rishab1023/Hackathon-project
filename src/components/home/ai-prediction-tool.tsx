@@ -56,6 +56,12 @@ export function AIPredictionTool() {
     try {
       const aiResult = await generateRiskScore({ text: values.text });
       setResult(aiResult);
+      // Store the result in local storage to be picked up by the schedule page
+      localStorage.setItem("latestRiskAnalysis", JSON.stringify({
+        ...aiResult,
+        text: values.text,
+        timestamp: new Date().toISOString(),
+      }));
     } catch (error) {
       console.error("AI risk score generation failed:", error);
       toast({

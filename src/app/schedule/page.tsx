@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
+import type { Appointment } from "@/lib/types";
 
 const availableTimes = [
   "09:00 AM",
@@ -58,12 +59,28 @@ export default function SchedulePage() {
       return;
     }
     
-    const newAppointment = {
+    let riskAnalysis;
+    try {
+        const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
+        if (storedAnalysis) {
+            const parsedAnalysis = JSON.parse(storedAnalysis);
+            // Check if the analysis was done in the last 10 minutes
+            const tenMinutes = 10 * 60 * 1000;
+            if (new Date().getTime() - new Date(parsedAnalysis.timestamp).getTime() < tenMinutes) {
+                riskAnalysis = parsedAnalysis;
+            }
+        }
+    } catch (error) {
+        console.error("Could not retrieve risk analysis from local storage", error);
+    }
+    
+    const newAppointment: Appointment = {
       id: new Date().toISOString(),
       name,
       email,
       date: date.toISOString(),
       time: selectedTime,
+      riskScore: riskAnalysis?.riskScore,
     };
     
     try {
@@ -71,6 +88,12 @@ export default function SchedulePage() {
         const sessions = storedSessions ? JSON.parse(storedSessions) : [];
         sessions.push(newAppointment);
         localStorage.setItem("scheduledSessions", JSON.stringify(sessions));
+        
+        // Clear the used risk analysis
+        if(riskAnalysis) {
+            localStorage.removeItem("latestRiskAnalysis");
+        }
+
         setIsSubmitted(true);
     } catch (error) {
         console.error("Failed to save session to local storage", error);

@@ -4,7 +4,8 @@
     "resources": "Resources",
     "schedule": "Schedule Session",
     "mySessions": "My Sessions",
-    "chat": "Peer Chat"
+    "chat": "Peer Chat",
+    "admin": "Admin"
   },
   "home": {
     "title": "Welcome to MindBloom",
@@ -163,5 +164,27 @@
     "description": "Chat with Alex, a trained peer supporter who is here to listen.",
     "inputPlaceholder": "Type your message...",
     "send": "Send"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "description": "An overview of student well-being metrics. Peer chat messages remain private and are not displayed here.",
+    "sessions": {
+      "title": "Scheduled Sessions",
+      "description": "All upcoming counseling sessions booked by students."
+    },
+    "loading": "Loading sessions...",
+    "noSessions": "No sessions have been scheduled yet.",
+    "table": {
+      "student": "Student Name",
+      "date": "Appointment Date",
+      "time": "Time",
+      "riskScore": "AI Risk Score",
+      "notAvailable": "N/A"
+    },
+    "riskLevels": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+    }
   }
 }

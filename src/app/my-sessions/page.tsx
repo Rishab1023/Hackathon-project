@@ -26,14 +26,8 @@ import {
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
+import type { Appointment } from "@/lib/types";
 
-interface Appointment {
-  id: string;
-  name: string;
-  email: string;
-  date: string;
-  time: string;
-}
 
 export default function MySessionsPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);

@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/schedule", label: "nav.schedule" },
   { href: "/my-sessions", label: "nav.mySessions" },
   { href: "/chat", label: "nav.chat" },
+  { href: "/admin", label: "nav.admin" },
 ];
 
 export function MobileNav() {

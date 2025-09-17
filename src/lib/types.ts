@@ -16,3 +16,12 @@ export interface Message {
   role: 'user' | 'model';
   content: string;
 }
+
+export interface Appointment {
+  id: string;
+  name: string;
+  email: string;
+  date: string;
+  time: string;
+  riskScore?: number;
+}

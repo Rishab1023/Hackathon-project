@@ -38,6 +38,7 @@ import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { addScheduledSession, getScheduledSessions } from "@/lib/firestore";
+import { AuthGuard } from "@/components/auth/auth-guard";
 
 const availableTimes = [
   "09:00 AM",
@@ -62,16 +63,8 @@ export default function SchedulePage() {
 
   const { toast } = useToast();
   const { t } = useTranslation();
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
-
-
+  const { user } = useAuth();
+  
   const getBookedTimesForDate = useCallback((selectedDate: Date | undefined) => {
     if (!selectedDate) return [];
     return allSessions
@@ -218,7 +211,7 @@ export default function SchedulePage() {
 
   const bookedTimes = getBookedTimesForDate(date);
 
-  if (authLoading || isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -255,116 +248,118 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
-      <div className="space-y-4 text-center mb-12">
-        <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
-          {t('schedule.title')}
-        </h1>
-        <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl">
-          {t('schedule.description')}
-        </p>
-      </div>
+    <AuthGuard>
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="space-y-4 text-center mb-12">
+          <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
+            {t('schedule.title')}
+          </h1>
+          <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl">
+            {t('schedule.description')}
+          </p>
+        </div>
 
-      <Card className="w-full max-w-2xl mx-auto shadow-lg">
-        <form onSubmit={handleSubmit}>
-          <CardHeader>
-            <CardTitle>{t('schedule.form.title')}</CardTitle>
-            <CardDescription>
-              {t('schedule.form.description')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            {isPriority && (
-                <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Priority Booking</AlertTitle>
-                    <AlertDescription>
-                        Based on your analysis, we've pre-selected the earliest available appointment for you. Please confirm your details below.
-                    </AlertDescription>
-                </Alert>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <Label className="text-base">{t('schedule.form.dateLabel')}</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                      )}
-                      disabled={isPriority}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>{t('schedule.form.datePlaceholder')}</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={handleDateChange}
-                      initialFocus
-                      disabled={(day) => day < new Date(new Date().setHours(0,0,0,0)) || day.getDay() === 0 || day.getDay() === 6}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-base">{t('schedule.form.timeLabel')}</Label>
-                 <RadioGroup
-                    value={selectedTime}
-                    onValueChange={(value) => !isPriority && setSelectedTime(value)}
-                    className="grid grid-cols-2 gap-2"
-                  >
-                    {availableTimes.map((time) => {
-                      const isBooked = bookedTimes.includes(time);
-                      return (
-                        <div key={time}>
-                          <RadioGroupItem
-                            value={time}
-                            id={time}
-                            className="peer sr-only"
-                            disabled={isBooked || (isPriority && time !== selectedTime)}
-                          />
-                          <Label
-                            htmlFor={time}
-                            className={cn(
-                              "flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
-                              isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70",
-                              isPriority && time !== selectedTime && "cursor-not-allowed bg-muted/50 text-muted-foreground opacity-70"
-                            )}
-                          >
-                            {time}
-                          </Label>
-                        </div>
-                      )
-                    })}
-                  </RadioGroup>
-              </div>
-            </div>
-             <div className="space-y-4">
-                <h3 className="text-base font-medium">{t('schedule.form.infoLabel')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">{t('schedule.form.nameLabel')}</Label>
-                        <Input id="name" placeholder={t('schedule.form.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="email">{t('schedule.form.emailLabel')}</Label>
-                        <Input id="email" type="email" placeholder={t('schedule.form.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
-                    </div>
+        <Card className="w-full max-w-2xl mx-auto shadow-lg">
+          <form onSubmit={handleSubmit}>
+            <CardHeader>
+              <CardTitle>{t('schedule.form.title')}</CardTitle>
+              <CardDescription>
+                {t('schedule.form.description')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {isPriority && (
+                  <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Priority Booking</AlertTitle>
+                      <AlertDescription>
+                          Based on your analysis, we've pre-selected the earliest available appointment for you. Please confirm your details below.
+                      </AlertDescription>
+                  </Alert>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-base">{t('schedule.form.dateLabel')}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !date && "text-muted-foreground"
+                        )}
+                        disabled={isPriority}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP") : <span>{t('schedule.form.datePlaceholder')}</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={handleDateChange}
+                        initialFocus
+                        disabled={(day) => day < new Date(new Date().setHours(0,0,0,0)) || day.getDay() === 0 || day.getDay() === 6}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email}>
-              {t('schedule.form.submitButton')}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+                <div className="space-y-2">
+                  <Label className="text-base">{t('schedule.form.timeLabel')}</Label>
+                  <RadioGroup
+                      value={selectedTime}
+                      onValueChange={(value) => !isPriority && setSelectedTime(value)}
+                      className="grid grid-cols-2 gap-2"
+                    >
+                      {availableTimes.map((time) => {
+                        const isBooked = bookedTimes.includes(time);
+                        return (
+                          <div key={time}>
+                            <RadioGroupItem
+                              value={time}
+                              id={time}
+                              className="peer sr-only"
+                              disabled={isBooked || (isPriority && time !== selectedTime)}
+                            />
+                            <Label
+                              htmlFor={time}
+                              className={cn(
+                                "flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
+                                isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70",
+                                isPriority && time !== selectedTime && "cursor-not-allowed bg-muted/50 text-muted-foreground opacity-70"
+                              )}
+                            >
+                              {time}
+                            </Label>
+                          </div>
+                        )
+                      })}
+                    </RadioGroup>
+                </div>
+              </div>
+              <div className="space-y-4">
+                  <h3 className="text-base font-medium">{t('schedule.form.infoLabel')}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="name">{t('schedule.form.nameLabel')}</Label>
+                          <Input id="name" placeholder={t('schedule.form.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} required />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="email">{t('schedule.form.emailLabel')}</Label>
+                          <Input id="email" type="email" placeholder={t('schedule.form.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
+                      </div>
+                  </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email || (isPriority && !selectedTime) }>
+                {t('schedule.form.submitButton')}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    </AuthGuard>
   );
 }

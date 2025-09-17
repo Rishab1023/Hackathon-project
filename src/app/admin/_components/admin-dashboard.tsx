@@ -4,19 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { useTranslation } from "@/hooks/use-translation";
-import { format, formatDistanceToNow } from "date-fns";
-import { enUS, hi } from "date-fns/locale";
-import type { Appointment } from "@/lib/types";
-import { Users, Activity, CalendarCheck } from "lucide-react";
+import { Users } from "lucide-react";
 import { updateActiveUsers, leaveActiveUsers } from "@/app/actions/update-active-users";
 
-export default function AdminDashboard({ recentSessions }: { recentSessions?: Appointment[]}) {
-  const { t, language } = useTranslation();
+export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [activeUsers, setActiveUsers] = useState(1);
   const userIdRef = useRef<string | null>(null);
 
@@ -53,36 +49,6 @@ export default function AdminDashboard({ recentSessions }: { recentSessions?: Ap
       }
     };
   }, []);
-
-  const locales: { [key: string]: Locale } = { en: enUS, hi };
-
-  if (recentSessions) {
-    return (
-      <>
-        {recentSessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('admin.recentActivity.noActivity')}</p>
-        ) : (
-            <div className="space-y-6">
-                {recentSessions.map(session => (
-                    <div key={session.id} className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                          <CalendarCheck className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium">
-                                {t('admin.recentActivity.scheduled', {name: session.name})}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(session.id), { addSuffix: true, locale: locales[language] })}
-                            </p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        )}
-      </>
-    )
-  }
 
   return (
       <Card>

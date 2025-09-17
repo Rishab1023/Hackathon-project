@@ -2,8 +2,7 @@ import {
   ref,
   get,
   child,
-  runTransaction,
-  DatabaseError
+  runTransaction
 } from "firebase/database";
 import { db } from "./firebase";
 import type { Appointment } from "./types";
@@ -26,8 +25,8 @@ export async function getScheduledSessions(): Promise<Appointment[]> {
       }));
     }
     return [];
-  } catch (error) {
-    if (error instanceof DatabaseError) {
+  } catch (error: any) {
+    if (error.code === 'PERMISSION_DENIED') {
       console.error("Firebase Realtime Database permission denied. Please ensure your security rules allow read access to the '/sessions' path.");
       return []; // Return empty array to prevent app crash
     }
@@ -49,8 +48,8 @@ export async function getResourceClickCount(): Promise<number> {
       return snapshot.val();
     }
     return 0;
-  } catch (error) {
-     if (error instanceof DatabaseError) {
+  } catch (error: any) {
+     if (error.code === 'PERMISSION_DENIED') {
       console.error("Firebase Realtime Database permission denied. Please ensure your security rules allow read access to '/analytics/resources'.");
       return 0; // Return 0 to prevent app crash
     }

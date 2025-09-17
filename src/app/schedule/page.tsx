@@ -38,7 +38,7 @@ import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { db } from "@/lib/firebase";
-import { collection, query, getDocs, addDoc } from "firebase/firestore";
+import { ref, get, push, set } from "firebase/database";
 
 const availableTimes = [
   "09:00 AM",
@@ -66,14 +66,20 @@ export default function SchedulePage() {
   const { user } = useAuth();
   
   const getScheduledSessions = useCallback(async (): Promise<Appointment[]> => {
-    const q = query(collection(db, "sessions"));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Appointment));
+    const sessionsRef = ref(db, 'sessions');
+    const snapshot = await get(sessionsRef);
+    if (snapshot.exists()) {
+      const sessionsData = snapshot.val();
+      return Object.keys(sessionsData).map(key => ({ id: key, ...sessionsData[key] } as Appointment));
+    }
+    return [];
   }, []);
 
   const addScheduledSession = useCallback(async (session: Omit<Appointment, 'id'>): Promise<string> => {
-    const docRef = await addDoc(collection(db, "sessions"), session);
-    return docRef.id;
+    const sessionsRef = ref(db, 'sessions');
+    const newSessionRef = push(sessionsRef);
+    await set(newSessionRef, session);
+    return newSessionRef.key!;
   }, []);
   
   const getBookedTimesForDate = useCallback((selectedDate: Date | undefined) => {
@@ -91,7 +97,7 @@ export default function SchedulePage() {
             const sessions = await getScheduledSessions();
             setAllSessions(sessions);
         } catch (error) {
-            console.error("Failed to fetch sessions from Firestore", error);
+            console.error("Failed to fetch sessions from Realtime Database", error);
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -193,7 +199,7 @@ export default function SchedulePage() {
         localStorage.removeItem("latestRiskAnalysis");
         setIsSubmitted(true);
     } catch (error) {
-        console.error("Failed to save session to Firestore", error);
+        console.error("Failed to save session to Realtime Database", error);
         toast({
             variant: "destructive",
             title: t('schedule.toast.failed.title'),

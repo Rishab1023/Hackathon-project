@@ -9,7 +9,7 @@ import { getTranslations } from "@/lib/get-translation";
 import { format } from "date-fns";
 import type { Appointment } from "@/lib/types";
 import { BarChart, BookOpen, CalendarCheck, Users, Activity } from "lucide-react";
-import { getScheduledSessions, getResourceClickCount } from "@/lib/firestore";
+import { getScheduledSessions, getResourceClickCount } from "@/lib/database";
 import { unstable_noStore as noStore } from 'next/cache';
 import AdminDashboard from "./_components/admin-dashboard";
 import { AuthGuard } from "@/components/auth/auth-guard";

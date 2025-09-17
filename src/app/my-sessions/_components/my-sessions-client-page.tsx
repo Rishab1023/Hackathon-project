@@ -31,7 +31,7 @@ import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { ref, query, orderByChild, equalTo, get, remove } from "firebase/database";
 
 export default function MySessionsClientPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -42,13 +42,19 @@ export default function MySessionsClientPage() {
   const router = useRouter();
 
   const getMyScheduledSessions = useCallback(async (userId: string): Promise<Appointment[]> => {
-    const q = query(collection(db, "sessions"), where("userId", "==", userId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Appointment));
+    const sessionsRef = ref(db, 'sessions');
+    const userSessionsQuery = query(sessionsRef, orderByChild('userId'), equalTo(userId));
+    const snapshot = await get(userSessionsQuery);
+    if (snapshot.exists()) {
+      const sessionsData = snapshot.val();
+      return Object.keys(sessionsData).map(key => ({ id: key, ...sessionsData[key] } as Appointment));
+    }
+    return [];
   }, []);
 
   const deleteScheduledSession = useCallback(async (sessionId: string): Promise<void> => {
-    await deleteDoc(doc(db, "sessions", sessionId));
+    const sessionRef = ref(db, `sessions/${sessionId}`);
+    await remove(sessionRef);
   }, []);
 
 
@@ -65,7 +71,7 @@ export default function MySessionsClientPage() {
             const userSessions = await getMyScheduledSessions(user.uid);
             setSessions(userSessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
         } catch (error) {
-            console.error("Failed to load sessions from Firestore", error);
+            console.error("Failed to load sessions from Realtime Database", error);
             toast({
                 variant: "destructive",
                 title: t('mySessions.toast.loadError.title'),
@@ -85,8 +91,7 @@ export default function MySessionsClientPage() {
             title: t('mySessions.toast.cancelSuccess.title'),
             description: t('mySessions.toast.cancelSuccess.description'),
         });
-        // Update state instead of reloading
-        setSessions(prevSessions => prevSessions.filter(s => s.id !== sessionId));
+        window.location.reload();
     } catch (error) {
         console.error("Failed to cancel session", error);
         toast({

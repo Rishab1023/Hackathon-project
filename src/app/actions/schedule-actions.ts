@@ -42,24 +42,33 @@ export async function getScheduledTimesForDate(date: Date) {
     const startOfDay = new Date(date.setHours(0, 0, 0, 0));
     const endOfDay = new Date(date.setHours(23, 59, 59, 999));
 
-    const appointments = await sessions.find({
-        date: {
-            $gte: startOfDay.toISOString(),
-            $lt: endOfDay.toISOString(),
-        }
-    }).toArray();
-
-    return appointments.map(appt => appt.time);
+    try {
+        const appointments = await sessions.find({
+            date: {
+                $gte: startOfDay.toISOString(),
+                $lt: endOfDay.toISOString(),
+            }
+        }).toArray();
+        return appointments.map(appt => appt.time);
+    } catch (e) {
+        console.error("Failed to fetch scheduled times from MongoDB: ", e);
+        return [];
+    }
 }
 
 export async function getMyScheduledSessions(userId: string): Promise<Appointment[]> {
     const sessionsCollection = await getSessionsCollection();
-    const userSessions = await sessionsCollection.find({ userId: userId }).toArray();
-    
-    return userSessions.map(session => ({
-        ...session,
-        _id: session._id.toString(),
-    }));
+    try {
+        const userSessions = await sessionsCollection.find({ userId: userId }).toArray();
+        
+        return userSessions.map(session => ({
+            ...session,
+            _id: session._id.toString(),
+        }));
+    } catch (e) {
+        console.error("Failed to fetch user sessions from MongoDB: ", e);
+        return [];
+    }
 }
 
 export async function deleteScheduledSession(sessionId: string): Promise<{success: boolean}> {
@@ -69,13 +78,18 @@ export async function deleteScheduledSession(sessionId: string): Promise<{succes
         return { success: false };
     }
 
-    const result = await sessionsCollection.deleteOne({ _id: new ObjectId(sessionId) });
+    try {
+        const result = await sessionsCollection.deleteOne({ _id: new ObjectId(sessionId) });
 
-    if (result.deletedCount === 1) {
-        revalidatePath("/my-sessions");
-        revalidatePath("/admin");
-        return { success: true };
-    } else {
+        if (result.deletedCount === 1) {
+            revalidatePath("/my-sessions");
+            revalidatePath("/admin");
+            return { success: true };
+        } else {
+            return { success: false };
+        }
+    } catch (e) {
+        console.error("Failed to delete session from MongoDB: ", e);
         return { success: false };
     }
 }

@@ -7,7 +7,7 @@ const ANALYTICS_COLLECTION = "analytics";
 
 async function getAnalyticsCollection() {
     const db = await getDb();
-    return db.collection(ANALYTICS_COLlection);
+    return db.collection(ANALYTICS_COLLECTION);
 }
 
 export async function incrementResourceClickCount(resourceId: string): Promise<void> {

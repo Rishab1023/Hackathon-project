@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useTranslation } from "@/hooks/use-translation";
 import { format, formatDistanceToNow } from "date-fns";
+import { enUS, hi } from "date-fns/locale";
 import type { Appointment } from "@/lib/types";
 import { BarChart, BookOpen, CalendarCheck, Users, Activity } from "lucide-react";
 import { updateActiveUsers } from "@/app/actions/update-active-users";
@@ -64,6 +65,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   const recentSessions = sessions.slice(0, 5);
+  const locales: { [key: string]: Locale } = { en: enUS, hi };
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
@@ -172,7 +174,7 @@ export default function AdminDashboardPage() {
                                         {t('admin.recentActivity.scheduled', {name: session.name})}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {formatDistanceToNow(new Date(session.id), { addSuffix: true, locale: language === 'hi' ? require('date-fns/locale/hi') : require('date-fns/locale/en-US') })}
+                                        {formatDistanceToNow(new Date(session.id), { addSuffix: true, locale: locales[language] })}
                                     </p>
                                 </div>
                             </div>

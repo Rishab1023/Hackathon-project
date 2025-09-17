@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { format, addDays } from "date-fns";
-import { Calendar as CalendarIcon, CheckCircle } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -322,3 +322,5 @@ export default function SchedulePage() {
     </div>
   );
 }
+
+    

@@ -11,13 +11,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const AnalyzeGradesInputSchema = z.object({
+const AnalyzeGradesInputSchema = z.object({
   studentName: z.string().describe("The student's name."),
   grades: z.string().describe('A string of subjects and grades, e.g., "Math: 85, Science: 70, English: 91".'),
 });
 export type AnalyzeGradesInput = z.infer<typeof AnalyzeGradesInputSchema>;
 
-export const AnalyzeGradesOutputSchema = z.object({
+const AnalyzeGradesOutputSchema = z.object({
   isStruggling: z
     .boolean()
     .describe('Whether the student is predicted to be struggling.'),

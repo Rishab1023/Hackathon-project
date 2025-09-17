@@ -69,12 +69,12 @@ export default function MySessionsClientPage() {
   const cancelSession = async (sessionId: string) => {
     try {
         await deleteScheduledSession(sessionId);
-        const updatedSessions = sessions.filter((session) => session.id !== sessionId);
-        setSessions(updatedSessions);
         toast({
             title: t('mySessions.toast.cancelSuccess.title'),
             description: t('mySessions.toast.cancelSuccess.description'),
         });
+        // Reload the page to show the updated list of sessions
+        window.location.reload();
     } catch (error) {
         console.error("Failed to cancel session", error);
         toast({

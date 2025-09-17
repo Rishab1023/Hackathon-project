@@ -8,6 +8,7 @@ import {
   Sheet,
   SheetContent,
   SheetHeader,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Logo } from "@/components/common/logo";
 import { useTranslation } from "@/hooks/use-translation";

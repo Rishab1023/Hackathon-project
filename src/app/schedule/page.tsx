@@ -347,7 +347,7 @@ export default function SchedulePage() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">{t('schedule.form.emailLabel')}</Label>
-                        <Input id="email" type="email" placeholder={t('schedule.form.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required disabled />
+                        <Input id="email" type="email" placeholder={t('schedule.form.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required />
                     </div>
                 </div>
             </div>

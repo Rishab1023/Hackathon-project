@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { format, addDays } from "date-fns";
-import { Calendar as CalendarIcon, CheckCircle, AlertTriangle } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -34,6 +34,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 const availableTimes = [
   "09:00 AM",
@@ -56,6 +58,15 @@ export default function SchedulePage() {
 
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
 
   const getBookedTimesForDate = useCallback((selectedDate: Date | undefined) => {
     if (!selectedDate) return [];
@@ -65,6 +76,7 @@ export default function SchedulePage() {
   }, [allSessions]);
 
   useEffect(() => {
+    if (!user) return;
     try {
       const storedSessions = localStorage.getItem("scheduledSessions");
       if (storedSessions) {
@@ -84,7 +96,7 @@ export default function SchedulePage() {
     } catch (error) {
       console.error("Failed to load data from local storage", error);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (isPriority && allSessions.length > 0) {
@@ -179,6 +191,14 @@ export default function SchedulePage() {
   }
 
   const bookedTimes = getBookedTimesForDate(date);
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (isSubmitted) {
     return (

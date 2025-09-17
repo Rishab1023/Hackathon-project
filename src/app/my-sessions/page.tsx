@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Clock, Trash2, User } from "lucide-react";
+import { Clock, Trash2, User, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +27,8 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 
 export default function MySessionsPage() {
@@ -34,8 +36,17 @@ export default function MySessionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (!user) return;
     try {
       const storedSessions = localStorage.getItem("scheduledSessions");
       if (storedSessions) {
@@ -51,7 +62,7 @@ export default function MySessionsPage() {
     } finally {
         setIsLoading(false);
     }
-  }, [t, toast]);
+  }, [t, toast, user]);
 
   const cancelSession = (sessionId: string) => {
     const updatedSessions = sessions.filter((session) => session.id !== sessionId);
@@ -63,10 +74,10 @@ export default function MySessionsPage() {
       });
   };
   
-  if (isLoading) {
+  if (authLoading || isLoading || !user) {
     return (
-        <div className="container mx-auto px-4 py-8 md:py-12 text-center">
-            <p>{t('mySessions.loading')}</p>
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
         </div>
     )
   }

@@ -12,8 +12,11 @@ import { useTranslation } from "@/hooks/use-translation";
 import { format, formatDistanceToNow } from "date-fns";
 import { enUS, hi } from "date-fns/locale";
 import type { Appointment } from "@/lib/types";
-import { BarChart, BookOpen, CalendarCheck, Users, Activity } from "lucide-react";
+import { BarChart, BookOpen, CalendarCheck, Users, Activity, Loader2 } from "lucide-react";
 import { updateActiveUsers, leaveActiveUsers } from "@/app/actions/update-active-users";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+
 
 export default function AdminDashboardPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -23,7 +26,19 @@ export default function AdminDashboardPage() {
   const [totalResources, setTotalResources] = useState(0);
   const userIdRef = useRef<string | null>(null);
 
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+
+  useEffect(() => {
+    if (!user) return;
+
     // Generate a unique ID for this user session
     userIdRef.current = "user_" + Math.random().toString(36).substr(2, 9);
 
@@ -75,7 +90,15 @@ export default function AdminDashboardPage() {
         leaveActiveUsers(userIdRef.current);
       }
     };
-  }, []);
+  }, [user]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   const recentSessions = sessions.slice(0, 5);
   const locales: { [key: string]: Locale } = { en: enUS, hi };

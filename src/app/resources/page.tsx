@@ -3,16 +3,28 @@
 import { resources } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, Globe } from "lucide-react";
+import { Phone, Mail, Globe, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+
 
 export default function ResourcesPage() {
   const { t, language } = useTranslation();
   const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (!user) return;
     try {
       const storedCounts = localStorage.getItem("resourceClickCount");
       if (storedCounts) {
@@ -21,7 +33,7 @@ export default function ResourcesPage() {
     } catch (error) {
       console.error("Failed to load resource click counts", error);
     }
-  }, []);
+  }, [user]);
 
   const handleResourceClick = (resourceId: string) => {
     try {
@@ -43,6 +55,13 @@ export default function ResourcesPage() {
     };
   });
 
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">

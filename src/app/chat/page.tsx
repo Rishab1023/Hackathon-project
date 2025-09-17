@@ -7,11 +7,13 @@ import {Input} from '@/components/ui/input';
 import {Card, CardContent} from '@/components/ui/card';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {Send, User} from 'lucide-react';
+import {Send, User, Loader2} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import type {Message} from '@/lib/types';
 import {readStreamableValue} from 'ai/rsc';
 import { useTranslation } from "@/hooks/use-translation";
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -19,6 +21,14 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -69,6 +79,14 @@ export default function ChatPage() {
       });
     }
   }, [messages]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto flex h-[calc(100vh-6rem)] max-h-full flex-col px-4 py-8 md:py-12">

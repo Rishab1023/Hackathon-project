@@ -11,3 +11,8 @@ export type Resource = {
   };
   icon: React.ComponentType<{ className?: string }>;
 };
+
+export interface Message {
+  role: 'user' | 'model';
+  content: string;
+}

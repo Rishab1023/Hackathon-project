@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/", label: "AI Analyzer" },
   { href: "/resources", label: "Resources" },
   { href: "/schedule", label: "Schedule Session" },
+  { href: "/chat", label: "Peer Chat" },
 ];
 
 export function Header() {

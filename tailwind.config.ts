@@ -17,10 +17,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['"PT Sans"', 'sans-serif'],
-        headline: ['"PT Sans"', 'sans-serif'],
+        body: ['var(--font-pt-sans)', 'sans-serif'],
+        headline: ['var(--font-pt-sans)', 'sans-serif'],
+        hindi: ['var(--font-hind)', 'sans-serif'],
         code: ['monospace'],
-        hindi: ['"Hind"', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',

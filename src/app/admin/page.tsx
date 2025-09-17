@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -13,7 +13,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { enUS, hi } from "date-fns/locale";
 import type { Appointment } from "@/lib/types";
 import { BarChart, BookOpen, CalendarCheck, Users, Activity } from "lucide-react";
-import { updateActiveUsers } from "@/app/actions/update-active-users";
+import { updateActiveUsers, leaveActiveUsers } from "@/app/actions/update-active-users";
 
 export default function AdminDashboardPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -21,47 +21,58 @@ export default function AdminDashboardPage() {
   const { t, language } = useTranslation();
   const [activeUsers, setActiveUsers] = useState(1);
   const [totalResources, setTotalResources] = useState(0);
+  const userIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Fetch initial data
-    try {
-      const storedSessions = localStorage.getItem("scheduledSessions");
-      if (storedSessions) {
-        const parsedSessions = JSON.parse(storedSessions) as Appointment[];
-        setSessions(parsedSessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      }
-      // In a real app, this would be fetched from a database
-      const resourceCount = JSON.parse(localStorage.getItem("resourceClickCount") || "0");
-      setTotalResources(resourceCount);
-    } catch (error) {
-      console.error("Failed to load data from local storage", error);
-    } finally {
-      setIsLoading(false);
-    }
+    // Generate a unique ID for this user session
+    userIdRef.current = "user_" + Math.random().toString(36).substr(2, 9);
 
-    // Set up active user tracking
-    const interval = setInterval(async () => {
+    const fetchData = async () => {
       try {
-        const data = await updateActiveUsers();
+        const storedSessions = localStorage.getItem("scheduledSessions");
+        if (storedSessions) {
+          const parsedSessions = JSON.parse(storedSessions) as Appointment[];
+          setSessions(parsedSessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        }
+        const resourceCount = JSON.parse(localStorage.getItem("resourceClickCount") || "0");
+        setTotalResources(resourceCount);
+        const data = await updateActiveUsers(userIdRef.current);
         setActiveUsers(data.count);
       } catch (error) {
-        console.error("Failed to update active users:", error);
-      }
-    }, 5000); // Poll every 5 seconds
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        navigator.sendBeacon('/api/leave');
+        console.error("Failed to load data", error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    window.addEventListener('visibilitychange', handleVisibilityChange);
+
+    fetchData();
+
+    const interval = setInterval(async () => {
+      if (userIdRef.current) {
+        try {
+          const data = await updateActiveUsers(userIdRef.current);
+          setActiveUsers(data.count);
+        } catch (error) {
+          console.error("Failed to update active users:", error);
+        }
+      }
+    }, 5000);
+
+    const handleBeforeUnload = () => {
+      if (userIdRef.current) {
+        leaveActiveUsers(userIdRef.current);
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('visibilitychange', handleVisibilityChange);
-      navigator.sendBeacon('/api/leave');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (userIdRef.current) {
+        leaveActiveUsers(userIdRef.current);
+      }
     };
-
   }, []);
 
   const recentSessions = sessions.slice(0, 5);

@@ -4,15 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { Globe, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Logo } from "@/components/common/logo";
 import { useTranslation } from "@/hooks/use-translation";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 
 const navLinks = [
   { href: "/", label: "nav.analyzer" },
@@ -25,7 +26,7 @@ const navLinks = [
 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
-  const { t, setLanguage } = useTranslation();
+  const { t, setLanguage, language } = useTranslation();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,30 +39,14 @@ export function MobileNav() {
             </Button>
           </SheetTrigger>
           <SheetContent side="right">
-            <div className="flex h-full flex-col">
-              <div className="flex items-center justify-between border-b pb-4">
+            <SheetHeader className="flex-row items-center justify-between">
                 <Logo />
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Globe className="h-5 w-5" />
-                        <span className="sr-only">Change language</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => {setLanguage("en"); setIsOpen(false);}}>
-                        English
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => {setLanguage("hi"); setIsOpen(false);}}>
-                        हिंदी (Hindi)
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu">
                   <X className="h-6 w-6" />
                 </Button>
-              </div>
-              <nav className="mt-8 flex flex-col space-y-4">
+            </SheetHeader>
+            <div className="flex h-full flex-col mt-8">
+              <nav className="flex flex-col space-y-4">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
@@ -73,6 +58,14 @@ export function MobileNav() {
                   </Link>
                 ))}
               </nav>
+              <Separator className="my-8" />
+              <div className="space-y-4">
+                 <h3 className="font-medium flex items-center gap-2"><Globe className="h-5 w-5"/> {language === 'en' ? 'Language' : 'भाषा'}</h3>
+                 <div className="flex flex-col space-y-2">
+                    <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => {setLanguage("en"); setIsOpen(false);}}>English</Button>
+                    <Button variant={language === 'hi' ? 'default' : 'outline'} onClick={() => {setLanguage("hi"); setIsOpen(false);}}>हिंदी (Hindi)</Button>
+                 </div>
+              </div>
             </div>
           </SheetContent>
         </Sheet>

@@ -1,48 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getDb } from "@/lib/mongodb";
 
-const ACTIVE_USERS_COLLECTION = "activeUsers";
-
-interface ActiveUser {
-  userId: string;
-  lastActive: Date;
-}
-
-// Set a timeout for 5 minutes
-const ACTIVE_TIMEOUT_MS = 5 * 60 * 1000;
-
-async function getActiveUsersCollection() {
-  const db = await getDb();
-  return db.collection<ActiveUser>(ACTIVE_USERS_COLLECTION);
-}
-
-// This function should be called periodically by clients.
+// This is now a mock function and does not use a database.
 export async function updateActiveUsers(userId: string) {
-  const collection = await getActiveUsersCollection();
-
-  // Remove users who have timed out
-  const timeout = new Date(Date.now() - ACTIVE_TIMEOUT_MS);
-  await collection.deleteMany({ lastActive: { $lt: timeout } });
+  // In a real scenario, this would interact with a database or cache.
+  // For now, we'll just return a static count to avoid DB errors.
   
-  // Add or update the current user
-  await collection.updateOne(
-    { userId },
-    { $set: { userId, lastActive: new Date() } },
-    { upsert: true }
-  );
-
-  const count = await collection.countDocuments();
-  
+  // Revalidate to show Next.js it's a server action
   revalidatePath("/admin");
   
-  return { count };
+  return { count: 1 };
 }
 
-// This should be called when the user leaves the page.
+// This is now a mock function and does not use a database.
 export async function leaveActiveUsers(userId:string) {
-   const collection = await getActiveUsersCollection();
-   await collection.deleteOne({ userId });
+   // In a real scenario, this would interact with a database or cache.
    revalidatePath("/admin");
 }

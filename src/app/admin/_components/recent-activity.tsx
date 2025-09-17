@@ -13,6 +13,23 @@ interface RecentActivityProps {
 export default function RecentActivity({ recentSessions }: RecentActivityProps) {
     const { t } = useTranslation();
 
+    const getSessionDate = (session: Appointment) => {
+        if (session._id) {
+            // Attempt to parse date from MongoDB ObjectId if it exists
+            try {
+                return new Date(parseInt(session._id.substring(0, 8), 16) * 1000);
+            } catch (e) {
+                // Fallback for invalid ObjectId or other formats
+            }
+        }
+        // Fallback to the session's date property if available and valid
+        if (session.date && !isNaN(new Date(session.date).getTime())) {
+            return new Date(session.date);
+        }
+        // Return current date as a last resort
+        return new Date();
+    }
+
     return (
         <Card className="lg:col-span-3">
             <CardHeader>
@@ -37,7 +54,7 @@ export default function RecentActivity({ recentSessions }: RecentActivityProps) 
                                         {t('admin.recentActivity.scheduled', { name: session.name })}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {format(new Date(session._id!.toString().substring(0, 8), 16) * 1000, "PPp")}
+                                        {format(getSessionDate(session), "PPp")}
                                     </p>
                                 </div>
                             </div>

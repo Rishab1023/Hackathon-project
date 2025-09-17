@@ -5,7 +5,13 @@ const MONGODB_DB = process.env.MONGODB_DB;
 
 if (!MONGODB_URI) {
   throw new Error(
-    "Please define the MONGODB_URI environment variable inside .env.local"
+    "Please define the MONGODB_URI environment variable inside .env"
+  );
+}
+
+if (MONGODB_URI.includes("<") || MONGODB_URI.includes(">")) {
+  throw new Error(
+    "Your MONGODB_URI in the .env file appears to be a placeholder. Please replace it with your actual connection string from MongoDB Atlas."
   );
 }
 

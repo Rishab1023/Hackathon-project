@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -42,6 +43,7 @@ export function AIPredictionTool() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { t } = useTranslation();
+  const router = useRouter();
 
   const form = useForm<z.infer<ReturnType<typeof formSchema>>>({
     resolver: zodResolver(formSchema(t)),
@@ -49,6 +51,25 @@ export function AIPredictionTool() {
       text: "",
     },
   });
+  
+  const handleScheduleNavigation = (priority = false) => {
+    if (!result) return;
+     try {
+      localStorage.setItem("latestRiskAnalysis", JSON.stringify({
+        ...result,
+        priority,
+        timestamp: new Date().toISOString(),
+      }));
+       router.push("/schedule");
+    } catch (error) {
+       console.error("Could not save risk analysis to local storage", error);
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not navigate to schedule page. Please try again.",
+      });
+    }
+  }
 
   async function onSubmit(values: z.infer<ReturnType<typeof formSchema>>) {
     setIsLoading(true);
@@ -56,12 +77,6 @@ export function AIPredictionTool() {
     try {
       const aiResult = await generateRiskScore({ text: values.text });
       setResult(aiResult);
-      // Store the result in local storage to be picked up by the schedule page
-      localStorage.setItem("latestRiskAnalysis", JSON.stringify({
-        ...aiResult,
-        text: values.text,
-        timestamp: new Date().toISOString(),
-      }));
     } catch (error) {
       console.error("AI risk score generation failed:", error);
       toast({
@@ -188,20 +203,27 @@ export function AIPredictionTool() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-accent/20 border-accent">
+              <Card className={cn("border-accent", result.riskScore > 75 ? "bg-destructive/20 border-destructive" : "bg-accent/20")}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl text-accent-foreground">
-                    <AlertTriangle className="text-accent-foreground" />
-                    {t('analyzer.result.actions.title')}
+                    <AlertTriangle className={cn(result.riskScore > 75 ? "text-destructive-foreground" : "text-accent-foreground")} />
+                     {t('analyzer.result.actions.title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-accent-foreground/90">{result.suggestedActions}</p>
-                  {result.riskScore > 40 && (
-                     <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                        <Link href="/schedule">{t('analyzer.result.actions.button')}</Link>
-                     </Button>
-                  )}
+                  <p className={cn(result.riskScore > 75 ? "text-destructive-foreground/90" : "text-accent-foreground/90")}>{result.suggestedActions}</p>
+                   <div className="flex flex-wrap gap-2">
+                    {result.riskScore > 75 && (
+                      <Button onClick={() => handleScheduleNavigation(true)} variant="destructive">
+                        Urgent: Schedule Now
+                      </Button>
+                    )}
+                    {result.riskScore > 40 && (
+                       <Button onClick={() => handleScheduleNavigation(false)} className={cn(result.riskScore > 75 ? 'bg-destructive/50' : 'bg-accent text-accent-foreground hover:bg-accent/90')}>
+                          {t('analyzer.result.actions.button')}
+                       </Button>
+                    )}
+                   </div>
                 </CardContent>
               </Card>
             </div>

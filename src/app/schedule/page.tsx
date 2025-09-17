@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { useState, useEffect, useCallback } from "react";
+import { format, addDays } from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
 import { Label } from "@/components/ui/label";
 import {
   RadioGroup,
@@ -40,34 +45,84 @@ const availableTimes = [
 ];
 
 export default function SchedulePage() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [allSessions, setAllSessions] = useState<Appointment[]>([]);
+  const [isPriority, setIsPriority] = useState(false);
+  const [riskScore, setRiskScore] = useState<number | undefined>(undefined);
+
   const { toast } = useToast();
   const { t } = useTranslation();
+
+  const getBookedTimesForDate = useCallback((selectedDate: Date | undefined) => {
+    if (!selectedDate) return [];
+    return allSessions
+      .filter(session => format(new Date(session.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
+      .map(session => session.time);
+  }, [allSessions]);
 
   useEffect(() => {
     try {
       const storedSessions = localStorage.getItem("scheduledSessions");
       if (storedSessions) {
-        setAllSessions(JSON.parse(storedSessions));
+        const parsedSessions = JSON.parse(storedSessions);
+        setAllSessions(parsedSessions);
       }
+      
+      const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
+      if (storedAnalysis) {
+        const { riskScore: score, priority } = JSON.parse(storedAnalysis);
+        setRiskScore(score);
+        if (priority) {
+          setIsPriority(true);
+        }
+      }
+
     } catch (error) {
-      console.error("Failed to load sessions from local storage", error);
+      console.error("Failed to load data from local storage", error);
     }
   }, []);
 
-  const getBookedTimesForDate = (selectedDate: Date | undefined) => {
-    if (!selectedDate) return [];
-    return allSessions
-      .filter(session => format(new Date(session.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
-      .map(session => session.time);
-  };
-  
-  const bookedTimes = getBookedTimesForDate(date);
+  useEffect(() => {
+    if (isPriority && allSessions.length > 0) {
+      // Find the earliest available slot
+      let checkDate = new Date();
+      let earliestSlot: { date: Date; time: string } | null = null;
+
+      for (let i = 0; i < 30; i++) { // Check up to 30 days in the future
+        const day = checkDate.getDay();
+        if (day === 0 || day === 6) { // Skip weekends
+          checkDate = addDays(checkDate, 1);
+          continue;
+        }
+
+        const bookedTimes = getBookedTimesForDate(checkDate);
+        const available = availableTimes.filter(time => !bookedTimes.includes(time));
+        
+        if (available.length > 0) {
+          earliestSlot = { date: checkDate, time: available[0] };
+          break;
+        }
+        checkDate = addDays(checkDate, 1);
+      }
+
+      if (earliestSlot) {
+        setDate(earliestSlot.date);
+        setSelectedTime(earliestSlot.time);
+      } else {
+        // Handle case where no slots are available in the next 30 days
+         toast({
+            variant: "destructive",
+            title: "No appointments available",
+            description: "We couldn't find any open slots in the next 30 days. Please check back later.",
+        });
+        setIsPriority(false); // Revert to manual selection
+      }
+    }
+  }, [isPriority, allSessions, getBookedTimesForDate, toast]);
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -81,42 +136,21 @@ export default function SchedulePage() {
       return;
     }
     
-    let riskAnalysis;
-    try {
-        const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
-        if (storedAnalysis) {
-            const parsedAnalysis = JSON.parse(storedAnalysis);
-            // Check if the analysis was done in the last 10 minutes
-            const tenMinutes = 10 * 60 * 1000;
-            if (new Date().getTime() - new Date(parsedAnalysis.timestamp).getTime() < tenMinutes) {
-                riskAnalysis = parsedAnalysis;
-            }
-        }
-    } catch (error) {
-        console.error("Could not retrieve risk analysis from local storage", error);
-    }
-    
     const newAppointment: Appointment = {
       id: new Date().toISOString(),
       name,
       email,
       date: date.toISOString(),
       time: selectedTime,
-      riskScore: riskAnalysis?.riskScore,
+      riskScore: riskScore,
     };
     
     try {
-        const storedSessions = localStorage.getItem("scheduledSessions");
-        const sessions = storedSessions ? JSON.parse(storedSessions) : [];
-        const updatedSessions = [...sessions, newAppointment];
+        const updatedSessions = [...allSessions, newAppointment];
         localStorage.setItem("scheduledSessions", JSON.stringify(updatedSessions));
-        setAllSessions(updatedSessions); // Update the state with the new session
+        setAllSessions(updatedSessions);
         
-        // Clear the used risk analysis
-        if(riskAnalysis) {
-            localStorage.removeItem("latestRiskAnalysis");
-        }
-
+        localStorage.removeItem("latestRiskAnalysis");
         setIsSubmitted(true);
     } catch (error) {
         console.error("Failed to save session to local storage", error);
@@ -129,17 +163,22 @@ export default function SchedulePage() {
   };
   
   const handleDateChange = (newDate: Date | undefined) => {
+    if(isPriority) return; // Don't allow date change in priority mode
     setDate(newDate);
     setSelectedTime(undefined); // Reset time when date changes
   };
   
   const resetForm = () => {
-    setDate(new Date());
+    setDate(undefined);
     setSelectedTime(undefined);
     setName("");
     setEmail("");
+    setRiskScore(undefined);
+    setIsPriority(false);
     setIsSubmitted(false);
   }
+
+  const bookedTimes = getBookedTimesForDate(date);
 
   if (isSubmitted) {
     return (
@@ -189,6 +228,15 @@ export default function SchedulePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
+            {isPriority && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Priority Booking</AlertTitle>
+                    <AlertDescription>
+                        Based on your analysis, we've pre-selected the earliest available appointment for you. Please confirm your details below.
+                    </AlertDescription>
+                </Alert>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
                 <Label className="text-base">{t('schedule.form.dateLabel')}</Label>
@@ -200,6 +248,7 @@ export default function SchedulePage() {
                         "w-full justify-start text-left font-normal",
                         !date && "text-muted-foreground"
                       )}
+                      disabled={isPriority}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {date ? format(date, "PPP") : <span>{t('schedule.form.datePlaceholder')}</span>}
@@ -220,7 +269,7 @@ export default function SchedulePage() {
                 <Label className="text-base">{t('schedule.form.timeLabel')}</Label>
                  <RadioGroup
                     value={selectedTime}
-                    onValueChange={setSelectedTime}
+                    onValueChange={(value) => !isPriority && setSelectedTime(value)}
                     className="grid grid-cols-2 gap-2"
                   >
                     {availableTimes.map((time) => {
@@ -231,13 +280,14 @@ export default function SchedulePage() {
                             value={time}
                             id={time}
                             className="peer sr-only"
-                            disabled={isBooked}
+                            disabled={isBooked || isPriority}
                           />
                           <Label
                             htmlFor={time}
                             className={cn(
                               "flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
-                              isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70"
+                              isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70",
+                              isPriority && time !== selectedTime && "cursor-not-allowed bg-muted/50 text-muted-foreground opacity-70"
                             )}
                           >
                             {time}

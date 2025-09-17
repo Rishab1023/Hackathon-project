@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Globe, Menu } from "lucide-react";
+import { Globe, Menu, LogIn, UserPlus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,10 +13,12 @@ import {
 import { Logo } from "@/components/common/logo";
 import { useTranslation } from "@/hooks/use-translation";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavLink {
   href: string;
   label: string;
+  auth?: boolean;
 }
 
 interface MobileNavProps {
@@ -26,6 +28,13 @@ interface MobileNavProps {
 export function MobileNav({ navLinks }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { t, setLanguage, language } = useTranslation();
+  const { user, logout } = useAuth();
+
+  const handleLinkClick = () => setIsOpen(false);
+  const handleLogout = () => {
+    logout();
+    handleLinkClick();
+  }
 
   return (
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -41,17 +50,35 @@ export function MobileNav({ navLinks }: MobileNavProps) {
           </SheetHeader>
           <div className="flex h-full flex-col mt-8">
             <nav className="flex flex-col space-y-4">
-              {navLinks.map((link) => (
+              {navLinks.filter(link => !link.auth || (link.auth && user)).map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   className="text-lg font-medium text-foreground hover:text-primary"
-                  onClick={() => setIsOpen(false)}
+                  onClick={handleLinkClick}
                 >
                   {t(link.label)}
                 </Link>
               ))}
             </nav>
+            <Separator className="my-8" />
+             {user ? (
+                 <div className="flex flex-col space-y-4">
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <Button variant="outline" onClick={handleLogout}>
+                        <LogOut className="mr-2" /> Logout
+                    </Button>
+                </div>
+             ) : (
+                <div className="flex flex-col space-y-4">
+                    <Button asChild variant="outline" onClick={handleLinkClick}>
+                        <Link href="/login"><LogIn className="mr-2"/> Login</Link>
+                    </Button>
+                     <Button asChild onClick={handleLinkClick}>
+                        <Link href="/signup"><UserPlus className="mr-2"/> Sign Up</Link>
+                    </Button>
+                </div>
+             )}
             <Separator className="my-8" />
             <div className="space-y-4">
                <h3 className="font-medium flex items-center gap-2"><Globe className="h-5 w-5"/> {language === 'en' ? 'Language' : 'भाषा'}</h3>

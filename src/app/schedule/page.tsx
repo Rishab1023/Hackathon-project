@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { format, addDays } from "date-fns";
+import { format, addDays }from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -105,12 +105,16 @@ export default function SchedulePage() {
       if (storedAnalysis) {
         const { riskScore: score, priority } = JSON.parse(storedAnalysis);
         setRiskScore(score);
-        setName(user.displayName || "");
+        if (user.displayName) {
+          setName(user.displayName);
+        }
         if (priority) {
           setIsPriority(true);
         }
       }
-      setEmail(user.email || "");
+      if(user.email) {
+        setEmail(user.email);
+      }
 
     } catch (error) {
       console.error("Failed to load data from local storage", error);
@@ -207,6 +211,9 @@ export default function SchedulePage() {
     setRiskScore(undefined);
     setIsPriority(false);
     setIsSubmitted(false);
+    if (user?.email) {
+      setEmail(user.email);
+    }
   }
 
   const bookedTimes = getBookedTimesForDate(date);
@@ -232,7 +239,7 @@ export default function SchedulePage() {
                 <CardContent className="space-y-2">
                     <p className="text-muted-foreground">{t('schedule.success.thankYou', { name })}</p>
                     <p className="text-muted-foreground">
-                        {t('schedule.success.confirmation', { date: format(date!, "EEEE, MMMM do"), time: selectedTime })}
+                        {t('schedule.success.confirmation', { date: format(date!, "EEEE, MMMM do"), time: selectedTime! })}
                     </p>
                     <p className="text-muted-foreground pt-2">{t('schedule.success.emailConfirmation', { email })}</p>
                 </CardContent>

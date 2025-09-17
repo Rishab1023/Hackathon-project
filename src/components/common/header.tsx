@@ -16,7 +16,7 @@ import {
 import { Globe } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 
-const navLinks = [
+export const navLinks = [
   { href: "/", label: "nav.analyzer" },
   { href: "/resources", label: "nav.resources" },
   { href: "/schedule", label: "nav.schedule" },
@@ -31,7 +31,7 @@ export function Header() {
   const { t, setLanguage } = useTranslation();
 
   if (isMobile) {
-    return <MobileNav />;
+    return <MobileNav navLinks={navLinks} />;
   }
 
   return (

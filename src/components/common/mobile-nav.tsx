@@ -8,23 +8,22 @@ import {
   Sheet,
   SheetContent,
   SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Logo } from "@/components/common/logo";
 import { useTranslation } from "@/hooks/use-translation";
 import { Separator } from "@/components/ui/separator";
 
-const navLinks = [
-  { href: "/", label: "nav.analyzer" },
-  { href: "/resources", label: "nav.resources" },
-  { href: "/schedule", label: "nav.schedule" },
-  { href: "/my-sessions", label: "nav.mySessions" },
-  { href: "/chat", label: "nav.chat" },
-  { href: "/admin", label: "nav.admin" },
-];
+interface NavLink {
+  href: string;
+  label: string;
+}
 
-export function MobileNav() {
+interface MobileNavProps {
+  navLinks: NavLink[];
+}
+
+export function MobileNav({ navLinks }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { t, setLanguage, language } = useTranslation();
 

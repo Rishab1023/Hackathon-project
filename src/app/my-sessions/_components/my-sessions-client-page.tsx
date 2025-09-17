@@ -66,8 +66,10 @@ export default function MySessionsClientPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
+    if(user) {
+      fetchSessions();
+    }
+  }, [fetchSessions, user]);
 
   const cancelSession = async (sessionId: string) => {
     startTransition(async () => {

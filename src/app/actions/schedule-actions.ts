@@ -9,7 +9,7 @@ const SESSIONS_COLLECTION = "sessions";
 
 async function getSessionsCollection() {
     const db = await getDb();
-    return db.collection<Appointment>(SESSIONS_COLLECTION);
+    return db.collection<Omit<Appointment, '_id'>>(SESSIONS_COLLECTION);
 }
 
 export async function addScheduledSession(sessionData: Omit<Appointment, '_id'>) {
@@ -57,14 +57,14 @@ export async function getScheduledTimesForDate(date: Date) {
 }
 
 export async function getMyScheduledSessions(userId: string): Promise<Appointment[]> {
-    const sessionsCollection = await getSessionsCollection();
+    const sessionsCollection = await getDb().then(db => db.collection(SESSIONS_COLLECTION));
     try {
         const userSessions = await sessionsCollection.find({ userId: userId }).toArray();
         
         return userSessions.map(session => ({
             ...session,
             _id: session._id.toString(),
-        }));
+        })) as Appointment[];
     } catch (e) {
         console.error("Failed to fetch user sessions from MongoDB: ", e);
         return [];

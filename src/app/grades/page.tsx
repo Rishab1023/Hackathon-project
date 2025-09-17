@@ -25,28 +25,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   analyzeGrades,
-  AnalyzeGradesInputSchema,
+  type AnalyzeGradesInput,
   type AnalyzeGradesOutput,
 } from "@/ai/flows/analyze-grades";
 import { Loader2, Sparkles, AlertTriangle, Lightbulb, CheckCircle } from "lucide-react";
+
+const GradeAnalysisFormSchema = z.object({
+  studentName: z.string().min(1, "Student name is required."),
+  grades: z.string().min(3, "Please enter at least one grade."),
+});
 
 export default function GradeAnalysisPage() {
   const [result, setResult] = useState<AnalyzeGradesOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof AnalyzeGradesInputSchema>>({
-    resolver: zodResolver(AnalyzeGradesInputSchema.extend({
-        studentName: z.string().min(1, "Student name is required."),
-        grades: z.string().min(3, "Please enter at least one grade."),
-    })),
+  const form = useForm<z.infer<typeof GradeAnalysisFormSchema>>({
+    resolver: zodResolver(GradeAnalysisFormSchema),
     defaultValues: {
       studentName: "",
       grades: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof AnalyzeGradesInputSchema>) {
+  async function onSubmit(values: z.infer<typeof GradeAnalysisFormSchema>) {
     setIsLoading(true);
     setResult(null);
     try {

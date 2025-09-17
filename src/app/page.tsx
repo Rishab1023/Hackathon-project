@@ -18,7 +18,7 @@ export default function Home() {
             {t('home.description')}
           </p>
         </div>
-        <div className="flex justify-center order-first md:order-last">
+        <div className="order-first flex justify-center md:order-last">
           <Image
             src="https://picsum.photos/seed/mindbloom-hero/600/400"
             alt={t('home.heroAlt')}

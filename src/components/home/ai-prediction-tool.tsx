@@ -176,15 +176,6 @@ export function AIPredictionTool() {
                     >
                       {`${result.riskScore}`}
                     </text>
-                    <text
-                      x="50%"
-                      y="65%"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      className="text-sm fill-muted-foreground"
-                    >
-                      / 100
-                    </text>
                   </RadialBarChart>
                 </ResponsiveContainer>
               </CardContent>

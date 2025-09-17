@@ -1,4 +1,3 @@
-import { ObjectId } from 'mongodb';
 
 export type Resource = {
   id: string;
@@ -20,18 +19,11 @@ export interface Message {
 }
 
 export interface Appointment {
-  _id?: string; // MongoDB's primary key
+  _id?: string; // Firestore document ID
   name: string;
   email: string;
-  date: string;
+  date: string; // ISO string
   time: string;
   riskScore?: number;
   userId?: string;
-}
-
-// Mock User for local storage auth
-export interface MockUser {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
 }

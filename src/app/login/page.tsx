@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -24,7 +26,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading, login } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && user) {
@@ -36,23 +38,22 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Mock login logic
-    if (email) {
-      login(email);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
       router.push("/");
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
-    } else {
+    } catch (error: any) {
        toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Please enter a valid email.",
+        description: error.message || "An unexpected error occurred.",
       });
+    } finally {
+        setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   if (loading || user) {

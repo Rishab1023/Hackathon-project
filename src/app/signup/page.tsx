@@ -17,6 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -25,7 +28,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading, login } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && user) {
@@ -46,21 +49,27 @@ export default function SignupPage() {
     }
     setIsLoading(true);
 
-    if (email) {
-      login(email);
-      router.push("/");
-       toast({
-        title: "Account Created",
-        description: "You have been successfully signed up.",
-      });
-    } else {
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, {
+            displayName: email.split('@')[0]
+        });
+
+        router.push("/");
+        toast({
+            title: "Account Created",
+            description: "You have been successfully signed up.",
+        });
+
+    } catch (error: any) {
        toast({
         variant: "destructive",
         title: "Sign Up Failed",
-        description: "Please enter a valid email.",
+        description: error.message || "An unexpected error occurred.",
       });
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   if (loading || user) {

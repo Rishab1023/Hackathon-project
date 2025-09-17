@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { format }from "date-fns";
+import { format } from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,9 +33,9 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
-import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/auth/auth-guard";
+import { addScheduledSession, getScheduledTimesForDate } from "@/app/actions/schedule-actions";
 
 const availableTimes = [
   "09:00 AM",
@@ -45,8 +45,6 @@ const availableTimes = [
   "03:00 PM",
   "04:00 PM",
 ];
-
-const SESSIONS_STORAGE_KEY = "sessions";
 
 export default function SchedulePage() {
   const [date, setDate] = useState<Date | undefined>(undefined);
@@ -58,6 +56,7 @@ export default function SchedulePage() {
   const [isPriority, setIsPriority] = useState(false);
   const [riskScore, setRiskScore] = useState<number | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingTimes, setIsLoadingTimes] = useState(false);
 
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -83,22 +82,20 @@ export default function SchedulePage() {
     }
   }, [user]);
 
-  const fetchBookedTimes = useCallback((selectedDate: Date) => {
+  const fetchBookedTimes = useCallback(async (selectedDate: Date) => {
+    setIsLoadingTimes(true);
     try {
-      const storedData = localStorage.getItem(SESSIONS_STORAGE_KEY);
-      const allAppointments: Appointment[] = storedData ? JSON.parse(storedData) : [];
-      const dateString = format(selectedDate, "yyyy-MM-dd");
-      const times = allAppointments
-        .filter(appt => format(new Date(appt.date), "yyyy-MM-dd") === dateString)
-        .map(appt => appt.time);
+      const times = await getScheduledTimesForDate(selectedDate);
       setBookedTimes(times);
     } catch (error) {
-      console.error("Failed to fetch booked times from localStorage", error);
+      console.error("Failed to fetch booked times from Firestore", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Could not load available times for the selected date.",
       });
+    } finally {
+      setIsLoadingTimes(false);
     }
   }, [toast]);
 
@@ -116,26 +113,20 @@ export default function SchedulePage() {
     setIsSubmitting(true);
 
     try {
-        const storedData = localStorage.getItem(SESSIONS_STORAGE_KEY);
-        const allAppointments: Appointment[] = storedData ? JSON.parse(storedData) : [];
-        
-        const isAlreadyBooked = allAppointments.some(appt => 
-            format(new Date(appt.date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd") && appt.time === selectedTime
-        );
-
-        if(isAlreadyBooked) {
-             toast({
+        // Final check to prevent double booking
+        const currentBookedTimes = await getScheduledTimesForDate(date);
+        if (currentBookedTimes.includes(selectedTime)) {
+            toast({
               variant: "destructive",
               title: "Time slot unavailable",
               description: "This time slot has just been booked. Please select another time.",
             });
-            fetchBookedTimes(date); // Re-fetch times
+            setBookedTimes(currentBookedTimes);
             setIsSubmitting(false);
             return;
         }
 
-        const newAppointment: Appointment = {
-            _id: `session_${new Date().getTime()}`,
+        const newAppointment = {
             name,
             email,
             date: date.toISOString(),
@@ -143,22 +134,14 @@ export default function SchedulePage() {
             userId: user.uid,
             ...(riskScore !== undefined && { riskScore }),
         };
-
-        const updatedAppointments = [...allAppointments, newAppointment];
-        const updatedData = JSON.stringify(updatedAppointments);
-        localStorage.setItem(SESSIONS_STORAGE_KEY, updatedData);
-
-        // Manually trigger a storage event to notify other components (like admin page)
-        window.dispatchEvent(new StorageEvent('storage', {
-            key: SESSIONS_STORAGE_KEY,
-            newValue: updatedData
-        }));
+        
+        await addScheduledSession(newAppointment);
 
         localStorage.removeItem("latestRiskAnalysis");
         setIsSubmitted(true);
 
     } catch (error) {
-        console.error("Failed to save session to localStorage", error);
+        console.error("Failed to save session to Firestore", error);
         toast({
             variant: "destructive",
             title: t('schedule.toast.failed.title'),
@@ -280,7 +263,12 @@ export default function SchedulePage() {
                    {!date && (
                      <div className="text-sm text-muted-foreground h-full flex items-center">Please select a date first.</div>
                    )}
-                   {date && (
+                   {date && isLoadingTimes && (
+                     <div className="h-full flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                     </div>
+                   )}
+                   {date && !isLoadingTimes && (
                     <RadioGroup
                         value={selectedTime}
                         onValueChange={(value) => setSelectedTime(value)}
@@ -327,7 +315,7 @@ export default function SchedulePage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email || isSubmitting}>
+              <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email || isSubmitting || isLoadingTimes}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('schedule.form.submitButton')}
               </Button>

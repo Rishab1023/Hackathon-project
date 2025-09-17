@@ -2,71 +2,67 @@
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
 
-// Define the list of admin emails
-const adminEmails = ["admin@example.com"];
-
-// This is a mock User object
-interface MockUser {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  // Add other fields you might use
-}
-
+// This is the actual Firebase User object
 interface AuthContextType {
-  user: MockUser | null;
+  user: User | null;
   isAdmin: boolean;
   loading: boolean;
-  login: (email: string) => void;
   logout: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<MockUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        const parsedUser: MockUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAdmin(parsedUser.email ? adminEmails.includes(parsedUser.email) : false);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
+        try {
+            const idTokenResult = await user.getIdTokenResult();
+            setIsAdmin(!!idTokenResult.claims.admin);
+        } catch(e) {
+            console.error("Failed to get admin status", e);
+            setIsAdmin(false);
+        }
+      } else {
+        setUser(null);
+        setIsAdmin(false);
       }
-    } catch (e) {
-      console.error("Failed to parse user from localStorage", e);
-      localStorage.removeItem("user");
-    } finally {
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = (email: string) => {
-    const newUser: MockUser = {
-      uid: "user_" + Math.random().toString(36).substr(2, 9),
-      email: email,
-      displayName: email.split('@')[0],
-    };
-    localStorage.setItem("user", JSON.stringify(newUser));
-    setUser(newUser);
-    setIsAdmin(adminEmails.includes(email));
-    setLoading(false);
-  };
-  
-  const logout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    setIsAdmin(false);
-    router.push("/");
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );

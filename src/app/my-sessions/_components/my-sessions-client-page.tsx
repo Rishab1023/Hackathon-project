@@ -29,8 +29,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-
-const SESSIONS_STORAGE_KEY = "sessions";
+import { getMyScheduledSessions, deleteScheduledSession } from "@/app/actions/schedule-actions";
 
 export default function MySessionsClientPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
@@ -45,12 +44,10 @@ export default function MySessionsClientPage() {
     if (!user) return;
     setIsLoading(true);
     try {
-      const storedData = localStorage.getItem(SESSIONS_STORAGE_KEY);
-      const allSessions: Appointment[] = storedData ? JSON.parse(storedData) : [];
-      const userSessions = allSessions.filter(session => session.userId === user.uid);
-      setSessions(userSessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+      const userSessions = await getMyScheduledSessions(user.uid);
+      setSessions(userSessions);
     } catch (error) {
-      console.error("Failed to load sessions from localStorage:", error);
+      console.error("Failed to load sessions from Firestore:", error);
       toast({
           variant: "destructive",
           title: t('mySessions.toast.loadError.title'),
@@ -77,24 +74,14 @@ export default function MySessionsClientPage() {
   const cancelSession = async (sessionId: string) => {
     setIsCancelling(sessionId);
     try {
-      const storedData = localStorage.getItem(SESSIONS_STORAGE_KEY);
-      let allSessions: Appointment[] = storedData ? JSON.parse(storedData) : [];
-      const updatedSessions = allSessions.filter(session => session._id !== sessionId);
-      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updatedSessions));
-
-      // Manually trigger a storage event to notify other components (like admin page)
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: SESSIONS_STORAGE_KEY,
-        newValue: JSON.stringify(updatedSessions)
-      }));
-
+      await deleteScheduledSession(sessionId);
       toast({
           title: t('mySessions.toast.cancelSuccess.title'),
           description: t('mySessions.toast.cancelSuccess.description'),
       });
       await fetchSessions(); // Re-fetch to update the UI
     } catch (error) {
-      console.error("Failed to cancel session in localStorage", error);
+      console.error("Failed to cancel session in Firestore", error);
       toast({
           variant: "destructive",
           title: "Error",

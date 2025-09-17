@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,8 +45,30 @@ export default function SchedulePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [allSessions, setAllSessions] = useState<Appointment[]>([]);
   const { toast } = useToast();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    try {
+      const storedSessions = localStorage.getItem("scheduledSessions");
+      if (storedSessions) {
+        setAllSessions(JSON.parse(storedSessions));
+      }
+    } catch (error) {
+      console.error("Failed to load sessions from local storage", error);
+    }
+  }, []);
+
+  const getBookedTimesForDate = (selectedDate: Date | undefined) => {
+    if (!selectedDate) return [];
+    return allSessions
+      .filter(session => format(new Date(session.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
+      .map(session => session.time);
+  };
+  
+  const bookedTimes = getBookedTimesForDate(date);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,8 +108,9 @@ export default function SchedulePage() {
     try {
         const storedSessions = localStorage.getItem("scheduledSessions");
         const sessions = storedSessions ? JSON.parse(storedSessions) : [];
-        sessions.push(newAppointment);
-        localStorage.setItem("scheduledSessions", JSON.stringify(sessions));
+        const updatedSessions = [...sessions, newAppointment];
+        localStorage.setItem("scheduledSessions", JSON.stringify(updatedSessions));
+        setAllSessions(updatedSessions); // Update the state with the new session
         
         // Clear the used risk analysis
         if(riskAnalysis) {
@@ -103,6 +126,11 @@ export default function SchedulePage() {
             description: t('schedule.toast.failed.description'),
         });
     }
+  };
+  
+  const handleDateChange = (newDate: Date | undefined) => {
+    setDate(newDate);
+    setSelectedTime(undefined); // Reset time when date changes
   };
   
   const resetForm = () => {
@@ -181,7 +209,7 @@ export default function SchedulePage() {
                     <Calendar
                       mode="single"
                       selected={date}
-                      onSelect={setDate}
+                      onSelect={handleDateChange}
                       initialFocus
                       disabled={(day) => day < new Date(new Date().setHours(0,0,0,0)) || day.getDay() === 0 || day.getDay() === 6}
                     />
@@ -195,21 +223,28 @@ export default function SchedulePage() {
                     onValueChange={setSelectedTime}
                     className="grid grid-cols-2 gap-2"
                   >
-                    {availableTimes.map((time) => (
-                      <div key={time}>
-                        <RadioGroupItem
-                          value={time}
-                          id={time}
-                          className="peer sr-only"
-                        />
-                        <Label
-                          htmlFor={time}
-                          className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                        >
-                          {time}
-                        </Label>
-                      </div>
-                    ))}
+                    {availableTimes.map((time) => {
+                      const isBooked = bookedTimes.includes(time);
+                      return (
+                        <div key={time}>
+                          <RadioGroupItem
+                            value={time}
+                            id={time}
+                            className="peer sr-only"
+                            disabled={isBooked}
+                          />
+                          <Label
+                            htmlFor={time}
+                            className={cn(
+                              "flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
+                              isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70"
+                            )}
+                          >
+                            {time}
+                          </Label>
+                        </div>
+                      )
+                    })}
                   </RadioGroup>
               </div>
             </div>
@@ -228,7 +263,7 @@ export default function SchedulePage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email}>
               {t('schedule.form.submitButton')}
             </Button>
           </CardFooter>

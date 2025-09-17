@@ -38,9 +38,9 @@ export const resources: Resource[] = [
   },
   {
     id: "3",
-    name: "The Trevor Project",
+    name: "Youth Help Line",
     category: "National",
-    description: "The world's largest suicide prevention and crisis intervention organization for LGBTQ (lesbian, gay, bisexual, transgender, queer, and questioning) young people.",
+    description: "The world's largest suicide prevention and crisis intervention organization for young people.",
     services: [
       "24/7 Call, Text & Chat",
       "Online Community",

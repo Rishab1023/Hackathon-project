@@ -6,9 +6,32 @@ import { Badge } from "@/components/ui/badge";
 import { Phone, Mail, Globe } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
+import { useEffect, useState } from "react";
 
 export default function ResourcesPage() {
   const { t, language } = useTranslation();
+  const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    try {
+      const storedCounts = localStorage.getItem("resourceClickCount");
+      if (storedCounts) {
+        setClickCounts(JSON.parse(storedCounts));
+      }
+    } catch (error) {
+      console.error("Failed to load resource click counts", error);
+    }
+  }, []);
+
+  const handleResourceClick = (resourceId: string) => {
+    try {
+      const newCounts = { ...clickCounts, [resourceId]: (clickCounts[resourceId] || 0) + 1 };
+      setClickCounts(newCounts);
+      localStorage.setItem("resourceClickCount", JSON.stringify(Object.values(newCounts).reduce((a,b) => a+b, 0)));
+    } catch (error) {
+      console.error("Failed to save resource click count", error);
+    }
+  };
   
   const translatedResources = resources.map(resource => {
     const translationKey = `resources.list.${resource.id}`;
@@ -68,13 +91,13 @@ export default function ResourcesPage() {
                 {resource.contact.email && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Mail className="h-4 w-4" />
-                    <a href={`mailto:${resource.contact.email}`} className="hover:text-primary">{resource.contact.email}</a>
+                    <a href={`mailto:${resource.contact.email}`} className="hover:text-primary" onClick={() => handleResourceClick(resource.id)}>{resource.contact.email}</a>
                   </div>
                 )}
                 {resource.contact.website && (
                   <div className="flex items-start gap-2 text-sm text-muted-foreground">
                     <Globe className="h-4 w-4 mt-1" />
-                    <Link href={resource.contact.website.startsWith('http') ? resource.contact.website : `https://${resource.contact.website}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary break-all">
+                    <Link href={resource.contact.website.startsWith('http') ? resource.contact.website : `https://${resource.contact.website}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary break-all" onClick={() => handleResourceClick(resource.id)}>
                       {resource.contact.website}
                     </Link>
                   </div>

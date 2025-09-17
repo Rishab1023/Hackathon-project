@@ -73,16 +73,15 @@ export default function MySessionsClientPage() {
 
   const cancelSession = async (sessionId: string) => {
     startTransition(async () => {
-      try {
-          await deleteScheduledSession(sessionId);
-          toast({
-              title: t('mySessions.toast.cancelSuccess.title'),
-              description: t('mySessions.toast.cancelSuccess.description'),
-          });
-          // Refetch sessions to update UI
-          await fetchSessions();
-      } catch (error) {
-          console.error("Failed to cancel session", error);
+      const result = await deleteScheduledSession(sessionId);
+      if (result.success) {
+        toast({
+            title: t('mySessions.toast.cancelSuccess.title'),
+            description: t('mySessions.toast.cancelSuccess.description'),
+        });
+        await fetchSessions();
+      } else {
+          console.error("Failed to cancel session");
           toast({
               variant: "destructive",
               title: "Error",
@@ -92,7 +91,15 @@ export default function MySessionsClientPage() {
     });
   };
   
-  if (authLoading || isLoading || !user) {
+  if (authLoading || !user) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
+
+  if (isLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />

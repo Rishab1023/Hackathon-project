@@ -39,16 +39,13 @@ export async function addScheduledSession(sessionData: Omit<Appointment, '_id'>)
 
 export async function getScheduledTimesForDate(date: Date) {
     const sessions = await getSessionsCollection();
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+    const dateString = date.toISOString().split('T')[0];
 
     try {
         const appointments = await sessions.find({
-            date: {
-                $gte: startOfDay.toISOString(),
-                $lt: endOfDay.toISOString(),
-            }
+            date: { $regex: `^${dateString}` }
         }).toArray();
+
         return appointments.map(appt => appt.time);
     } catch (e) {
         console.error("Failed to fetch scheduled times from MongoDB: ", e);

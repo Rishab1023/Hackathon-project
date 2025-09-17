@@ -26,18 +26,20 @@ export default function AdminDashboardPage() {
   const [totalResources, setTotalResources] = useState(0);
   const userIdRef = useRef<string | null>(null);
 
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
+    if (!authLoading) {
+      if (!user || !isAdmin) {
+        router.push('/');
+      }
     }
-  }, [user, authLoading, router]);
+  }, [user, isAdmin, authLoading, router]);
 
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAdmin) return;
 
     // Generate a unique ID for this user session
     userIdRef.current = "user_" + Math.random().toString(36).substr(2, 9);
@@ -90,9 +92,9 @@ export default function AdminDashboardPage() {
         leaveActiveUsers(userIdRef.current);
       }
     };
-  }, [user]);
+  }, [user, isAdmin]);
 
-  if (authLoading || !user) {
+  if (authLoading || !user || !isAdmin) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

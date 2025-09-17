@@ -5,8 +5,12 @@ import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
+// Define the list of admin emails
+const adminEmails = ["admin@example.com"];
+
 interface AuthContextType {
   user: User | null;
+  isAdmin: boolean;
   loading: boolean;
   logout: () => void;
 }
@@ -15,12 +19,14 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setIsAdmin(user ? adminEmails.includes(user.email || "") : false);
       setLoading(false);
     });
 
@@ -33,7 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

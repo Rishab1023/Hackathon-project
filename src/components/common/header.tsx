@@ -22,19 +22,29 @@ export const navLinks = [
   { href: "/", label: "nav.analyzer" },
   { href: "/resources", label: "nav.resources" },
   { href: "/schedule", label: "nav.schedule" },
-  { href: "/my-sessions", label: "nav.mySessions", auth: true },
+  { href: "/my-sessions", label: "nav.mySessions", auth: true, admin: false },
   { href: "/chat", label: "nav.chat" },
-  { href: "/admin", label: "nav.admin", auth: true },
+  { href: "/admin", label: "nav.admin", auth: true, admin: true },
 ];
 
 export function Header() {
   const pathname = usePathname();
   const { t, setLanguage } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
 
   const getInitials = (email: string | null | undefined) => {
     return email ? email.charAt(0).toUpperCase() : <User className="h-5 w-5" />;
   };
+
+  const visibleNavLinks = navLinks.filter(link => {
+    if (link.admin) {
+      return user && isAdmin;
+    }
+    if (link.auth) {
+      return !!user;
+    }
+    return true;
+  });
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,7 +52,7 @@ export function Header() {
         <Logo />
         <div className="ml-auto flex items-center gap-2">
             <nav className="hidden md:flex items-center space-x-2">
-            {navLinks.filter(link => !link.auth || (link.auth && user)).map((link) => (
+            {visibleNavLinks.map((link) => (
                 <Button
                 key={link.href}
                 variant="ghost"

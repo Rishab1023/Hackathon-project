@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,29 +29,16 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-
-// Local storage key for sessions
-const SESSIONS_STORAGE_KEY = "mindbloom-sessions";
+import { getMyScheduledSessions, deleteScheduledSession } from "@/app/actions/schedule-actions";
 
 export default function MySessionsClientPage() {
   const [sessions, setSessions] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCancelling, startTransition] = useTransition();
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-
-  const getMyScheduledSessions = useCallback(async (userId: string): Promise<Appointment[]> => {
-    const allSessions = JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
-    return allSessions.filter(session => session.userId === userId);
-  }, []);
-
-  const deleteScheduledSession = useCallback(async (sessionId: string): Promise<void> => {
-    let allSessions = JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
-    const updatedSessions = allSessions.filter(session => session.id !== sessionId);
-    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updatedSessions));
-  }, []);
-
 
   const fetchSessions = useCallback(async () => {
     if (!user) return;
@@ -60,7 +47,7 @@ export default function MySessionsClientPage() {
       const userSessions = await getMyScheduledSessions(user.uid);
       setSessions(userSessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
     } catch (error) {
-      console.error("Failed to load sessions from local storage", error);
+      console.error("Failed to load sessions:", error);
       toast({
           variant: "destructive",
           title: t('mySessions.toast.loadError.title'),
@@ -69,7 +56,7 @@ export default function MySessionsClientPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, getMyScheduledSessions, toast, t]);
+  }, [user, toast, t]);
 
 
   useEffect(() => {
@@ -83,22 +70,24 @@ export default function MySessionsClientPage() {
   }, [fetchSessions]);
 
   const cancelSession = async (sessionId: string) => {
-    try {
-        await deleteScheduledSession(sessionId);
-        toast({
-            title: t('mySessions.toast.cancelSuccess.title'),
-            description: t('mySessions.toast.cancelSuccess.description'),
-        });
-        // Refetch sessions to update UI
-        await fetchSessions();
-    } catch (error) {
-        console.error("Failed to cancel session", error);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to cancel the session. Please try again.",
-        });
-    }
+    startTransition(async () => {
+      try {
+          await deleteScheduledSession(sessionId);
+          toast({
+              title: t('mySessions.toast.cancelSuccess.title'),
+              description: t('mySessions.toast.cancelSuccess.description'),
+          });
+          // Refetch sessions to update UI
+          await fetchSessions();
+      } catch (error) {
+          console.error("Failed to cancel session", error);
+          toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Failed to cancel the session. Please try again.",
+          });
+      }
+    });
   };
   
   if (authLoading || isLoading || !user) {
@@ -136,7 +125,7 @@ export default function MySessionsClientPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {sessions.map((session) => (
-            <Card key={session.id} className="flex flex-col">
+            <Card key={session._id} className="flex flex-col">
               <CardHeader>
                 <CardTitle className="font-headline text-xl">
                   {format(new Date(session.date), "EEEE, MMMM do")}
@@ -156,8 +145,8 @@ export default function MySessionsClientPage() {
               <CardFooter>
                  <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full">
-                      <Trash2 className="mr-2 h-4 w-4" />
+                    <Button variant="destructive" className="w-full" disabled={isCancelling}>
+                      {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                       {t('mySessions.card.cancelButton')}
                     </Button>
                   </AlertDialogTrigger>
@@ -170,7 +159,7 @@ export default function MySessionsClientPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('mySessions.dialog.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => cancelSession(session.id)}>
+                      <AlertDialogAction onClick={() => cancelSession(session._id!)}>
                         {t('mySessions.dialog.confirm')}
                       </AlertDialogAction>
                     </AlertDialogFooter>

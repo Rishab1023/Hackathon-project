@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb';
+
 export type Resource = {
   id: string;
   name: string;
@@ -18,7 +20,7 @@ export interface Message {
 }
 
 export interface Appointment {
-  id: string;
+  _id?: string; // MongoDB's primary key
   name: string;
   email: string;
   date: string;

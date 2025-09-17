@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server';
+import { leaveActiveUsers } from '@/app/actions/update-active-users';
 
-// This is a mock implementation as we are not using a persistent store anymore.
+// This endpoint is used for navigator.sendBeacon
 export async function POST(request: Request) {
   try {
-    // In a local-storage-only app, the server doesn't have a central list of active users.
-    // This endpoint can effectively do nothing.
+    // navigator.sendBeacon sends data as text/plain, so we parse it manually
+    const body = await request.text();
+    const { userId } = JSON.parse(body);
+    
+    if (userId) {
+      await leaveActiveUsers(userId);
+    }
+    
     return new NextResponse('OK', { status: 200 });
   } catch (error) {
-    console.error('Error in mock leave API:', error);
+    console.error('Error in beacon leave API:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
-// This is required for sendBeacon to work.
 export const dynamic = 'force-dynamic';

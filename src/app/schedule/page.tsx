@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import { format, addDays }from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,8 +36,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Appointment } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/auth/auth-guard";
-
-const SESSIONS_STORAGE_KEY = "mindbloom-sessions";
+import { addScheduledSession, getScheduledTimesForDate } from "@/app/actions/schedule-actions";
 
 const availableTimes = [
   "09:00 AM",
@@ -53,111 +52,54 @@ export default function SchedulePage() {
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const [name, setName] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [allSessions, setAllSessions] = useState<Appointment[]>([]);
+  const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [isPriority, setIsPriority] = useState(false);
   const [riskScore, setRiskScore] = useState<number | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, startSubmitTransition] = useTransition();
+  const [isFetchingTimes, startFetchingTimesTransition] = useTransition();
   const [email, setEmail] = useState("");
 
   const { toast } = useToast();
   const { t } = useTranslation();
   const { user } = useAuth();
   
-  const getScheduledSessions = useCallback(async (): Promise<Appointment[]> => {
-    return JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || "[]") as Appointment[];
-  }, []);
-
-  const addScheduledSession = useCallback(async (session: Omit<Appointment, 'id'>): Promise<string> => {
-    const allSessions = await getScheduledSessions();
-    const newId = "session_" + new Date().getTime();
-    const newSessionWithId = { ...session, id: newId };
-    const updatedSessions = [...allSessions, newSessionWithId];
-    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updatedSessions));
-    return newId;
-  }, [getScheduledSessions]);
-  
-  const getBookedTimesForDate = useCallback((selectedDate: Date | undefined) => {
-    if (!selectedDate) return [];
-    return allSessions
-      .filter(session => format(new Date(session.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
-      .map(session => session.time);
-  }, [allSessions]);
-  
   useEffect(() => {
-    async function fetchAndSetInitialData() {
-      setIsLoading(true);
-      try {
-        const sessions = await getScheduledSessions();
-        setAllSessions(sessions);
-        
-        const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
-        if (storedAnalysis) {
-          const { riskScore: score, priority } = JSON.parse(storedAnalysis);
-          setRiskScore(score);
-          if (priority) {
-            setIsPriority(true);
-          }
+    try {
+      const storedAnalysis = localStorage.getItem("latestRiskAnalysis");
+      if (storedAnalysis) {
+        const { riskScore: score, priority } = JSON.parse(storedAnalysis);
+        setRiskScore(score);
+        if (priority) {
+          setIsPriority(true);
+          // For priority, we'll find the earliest slot on the server,
+          // so we don't pre-select here. We could enhance this later.
         }
-        
-        if (user) {
-          setName(user.displayName || "");
-          setEmail(user.email || "");
-        }
-        
+      }
+      
+      if (user) {
+        setName(user.displayName || "");
+        setEmail(user.email || "");
+      }
+    } catch (error) {
+      console.error("Failed to load initial data from local storage", error);
+    }
+  }, [user]);
+
+  const fetchBookedTimes = useCallback((selectedDate: Date) => {
+    startFetchingTimesTransition(async () => {
+       try {
+        const times = await getScheduledTimesForDate(selectedDate);
+        setBookedTimes(times);
       } catch (error) {
-        console.error("Failed to load initial data", error);
+        console.error("Failed to fetch booked times", error);
         toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not load session data. Please try again later.",
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load available times for the selected date.",
         });
-      } finally {
-        setIsLoading(false);
       }
-    }
-    
-    fetchAndSetInitialData();
-
-  }, [user, toast, getScheduledSessions]);
-
-
-  useEffect(() => {
-    if (isPriority && allSessions.length > 0) {
-      // Find the earliest available slot
-      let checkDate = new Date();
-      let earliestSlot: { date: Date; time: string } | null = null;
-
-      for (let i = 0; i < 30; i++) { // Check up to 30 days in the future
-        const day = checkDate.getDay();
-        if (day === 0 || day === 6) { // Skip weekends
-          checkDate = addDays(checkDate, 1);
-          continue;
-        }
-
-        const bookedTimes = getBookedTimesForDate(checkDate);
-        const available = availableTimes.filter(time => !bookedTimes.includes(time));
-        
-        if (available.length > 0) {
-          earliestSlot = { date: checkDate, time: available[0] };
-          break;
-        }
-        checkDate = addDays(checkDate, 1);
-      }
-
-      if (earliestSlot) {
-        setDate(earliestSlot.date);
-        setSelectedTime(earliestSlot.time);
-      } else {
-         toast({
-            variant: "destructive",
-            title: "No appointments available",
-            description: "We couldn't find any open slots in the next 30 days. Please check back later.",
-        });
-        setIsPriority(false); // Revert to manual selection
-      }
-    }
-  }, [isPriority, allSessions, getBookedTimesForDate, toast]);
-
+    });
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +112,7 @@ export default function SchedulePage() {
       return;
     }
     
-    const newAppointment: Omit<Appointment, 'id' | 'riskScore'> & { riskScore?: number } = {
+    const newAppointment: Omit<Appointment, '_id' | 'riskScore'> & { riskScore?: number } = {
       name,
       email,
       date: date.toISOString(),
@@ -182,24 +124,40 @@ export default function SchedulePage() {
       newAppointment.riskScore = riskScore;
     }
     
-    try {
-        await addScheduledSession(newAppointment);
-        localStorage.removeItem("latestRiskAnalysis");
-        setIsSubmitted(true);
-    } catch (error) {
-        console.error("Failed to save session to local storage", error);
-        toast({
-            variant: "destructive",
-            title: t('schedule.toast.failed.title'),
-            description: t('schedule.toast.failed.description'),
-        });
-    }
+    startSubmitTransition(async () => {
+      try {
+          const result = await addScheduledSession(newAppointment);
+          if (result.success) {
+            localStorage.removeItem("latestRiskAnalysis");
+            setIsSubmitted(true);
+          } else {
+             toast({
+              variant: "destructive",
+              title: result.error,
+              description: "The time slot may have been taken. Please select another time.",
+            });
+            // Re-fetch times to get the latest availability
+            fetchBookedTimes(date);
+          }
+      } catch (error) {
+          console.error("Failed to save session", error);
+          toast({
+              variant: "destructive",
+              title: t('schedule.toast.failed.title'),
+              description: t('schedule.toast.failed.description'),
+          });
+      }
+    });
   };
   
   const handleDateChange = (newDate: Date | undefined) => {
     if(isPriority) return; // Don't allow date change in priority mode
     setDate(newDate);
     setSelectedTime(undefined); // Reset time when date changes
+    setBookedTimes([]);
+    if (newDate) {
+      fetchBookedTimes(newDate);
+    }
   };
   
   const resetForm = () => {
@@ -212,16 +170,6 @@ export default function SchedulePage() {
     if (user?.email) {
       setEmail(user.email);
     }
-  }
-
-  const bookedTimes = getBookedTimesForDate(date);
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
   }
 
   if (isSubmitted) {
@@ -278,7 +226,7 @@ export default function SchedulePage() {
                       <AlertTriangle className="h-4 w-4" />
                       <AlertTitle>Priority Booking</AlertTitle>
                       <AlertDescription>
-                          Based on your analysis, we've pre-selected the earliest available appointment for you. Please confirm your details below.
+                          Based on your analysis, we recommend booking an appointment soon. Please select a date to see available times.
                       </AlertDescription>
                   </Alert>
               )}
@@ -312,35 +260,40 @@ export default function SchedulePage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-base">{t('schedule.form.timeLabel')}</Label>
-                  <RadioGroup
-                      value={selectedTime}
-                      onValueChange={(value) => !isPriority && setSelectedTime(value)}
-                      className="grid grid-cols-2 gap-2"
-                    >
-                      {availableTimes.map((time) => {
-                        const isBooked = bookedTimes.includes(time);
-                        return (
-                          <div key={time}>
-                            <RadioGroupItem
-                              value={time}
-                              id={time}
-                              className="peer sr-only"
-                              disabled={isBooked || (isPriority && time !== selectedTime)}
-                            />
-                            <Label
-                              htmlFor={time}
-                              className={cn(
-                                "flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
-                                isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70",
-                                isPriority && time !== selectedTime && "cursor-not-allowed bg-muted/50 text-muted-foreground opacity-70"
-                              )}
-                            >
-                              {time}
-                            </Label>
-                          </div>
-                        )
-                      })}
-                    </RadioGroup>
+                   {isFetchingTimes && <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/></div>}
+                   {!isFetchingTimes && date && (
+                    <RadioGroup
+                        value={selectedTime}
+                        onValueChange={(value) => setSelectedTime(value)}
+                        className="grid grid-cols-2 gap-2"
+                      >
+                        {availableTimes.map((time) => {
+                          const isBooked = bookedTimes.includes(time);
+                          return (
+                            <div key={time}>
+                              <RadioGroupItem
+                                value={time}
+                                id={time}
+                                className="peer sr-only"
+                                disabled={isBooked}
+                              />
+                              <Label
+                                htmlFor={time}
+                                className={cn(
+                                  "flex items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
+                                  isBooked && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through opacity-70"
+                                )}
+                              >
+                                {time}
+                              </Label>
+                            </div>
+                          )
+                        })}
+                      </RadioGroup>
+                   )}
+                   {!isFetchingTimes && !date && (
+                     <div className="text-sm text-muted-foreground h-full flex items-center">Please select a date first.</div>
+                   )}
                 </div>
               </div>
               <div className="space-y-4">
@@ -358,7 +311,8 @@ export default function SchedulePage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email}>
+              <Button type="submit" className="w-full" disabled={!date || !selectedTime || !name || !email || isSubmitting || isFetchingTimes}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('schedule.form.submitButton')}
               </Button>
             </CardFooter>

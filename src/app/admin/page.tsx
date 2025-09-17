@@ -36,8 +36,10 @@ export default function AdminDashboardPage() {
         }
         const resourceCount = JSON.parse(localStorage.getItem("resourceClickCount") || "0");
         setTotalResources(resourceCount);
-        const data = await updateActiveUsers(userIdRef.current);
-        setActiveUsers(data.count);
+        if (userIdRef.current) {
+            const data = await updateActiveUsers(userIdRef.current);
+            setActiveUsers(data.count);
+        }
       } catch (error) {
         console.error("Failed to load data", error);
       } finally {

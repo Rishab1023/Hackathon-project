@@ -17,6 +17,7 @@ import { Globe, User, LogOut } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export const navLinks = [
   { href: "/", label: "nav.analyzer" },
@@ -83,6 +84,8 @@ export function Header() {
                 </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            <ThemeToggle />
 
             {user ? (
                <DropdownMenu>

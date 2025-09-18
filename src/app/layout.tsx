@@ -5,6 +5,7 @@ import { Header } from "@/components/common/header";
 import { Toaster } from "@/components/ui/toaster";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import "./globals.css";
 
 const ptSans = PT_Sans({
@@ -42,11 +43,17 @@ export default function RootLayout({
       >
         <AuthProvider>
           <LanguageProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-            </div>
-            <Toaster />
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+            >
+              <div className="relative flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1">{children}</main>
+              </div>
+              <Toaster />
+            </ThemeProvider>
           </LanguageProvider>
         </AuthProvider>
       </body>

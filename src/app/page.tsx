@@ -24,7 +24,7 @@ export default function Home() {
           </div>
           <div className="order-first flex justify-center md:order-last">
             <Image
-              src="https://picsum.photos/seed/mindbloom-hero/600/400"
+              src="https://picsum.photos/seed/mindmitra-hero/600/400"
               alt={t('home.heroAlt')}
               data-ai-hint="supportive environment"
               width={600}

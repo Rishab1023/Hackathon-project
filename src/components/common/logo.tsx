@@ -6,10 +6,10 @@ export function Logo() {
     <Link
       href="/"
       className="flex items-center gap-2 text-xl font-bold text-primary"
-      aria-label="MindBloom Home"
+      aria-label="MindMitra Home"
     >
       <BrainCircuit className="h-6 w-6" />
-      <span className="font-headline">MindBloom</span>
+      <span className="font-headline">MindMitra</span>
     </Link>
   );
 }

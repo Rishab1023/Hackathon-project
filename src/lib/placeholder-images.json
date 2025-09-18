@@ -2,9 +2,9 @@
 {
   "placeholderImages": [
     {
-      "id": "mindbloom-hero",
+      "id": "mindmitra-hero",
       "description": "A person in a calm, supportive environment, looking out a window.",
-      "imageUrl": "https://picsum.photos/seed/mindbloom-hero/600/400",
+      "imageUrl": "https://picsum.photos/seed/mindmitra-hero/600/400",
       "imageHint": "supportive environment"
     }
   ]

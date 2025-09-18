@@ -23,7 +23,7 @@ const hind = Hind({
 });
 
 export const metadata: Metadata = {
-  title: "MindBloom",
+  title: "MindMitra",
   description: "AI-powered mental health support for students.",
 };
 

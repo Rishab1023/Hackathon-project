@@ -14,6 +14,7 @@ import { Logo } from "@/components/common/logo";
 import { useTranslation } from "@/hooks/use-translation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 interface NavLink {
   href: string;
@@ -85,12 +86,14 @@ export function MobileNav({ navLinks }: MobileNavProps) {
                     </Button>
                 </div>
              )}
-            <Separator className="my-8" />
-            <div className="space-y-4">
-               <h3 className="font-medium flex items-center gap-2"><Globe className="h-5 w-5"/> {language === 'en' ? 'Language' : 'भाषा'}</h3>
+            <div className="mt-auto space-y-4 pt-8">
+                <div className="flex items-center justify-between">
+                    <h3 className="font-medium flex items-center gap-2"><Globe className="h-5 w-5"/> {language === 'en' ? 'Language' : 'भाषा'}</h3>
+                    <ThemeToggle />
+                </div>
                <div className="flex flex-col space-y-2">
-                  <Button variant={language === 'en' ? 'default' : 'outline'} onClick={() => handleLanguageChange("en")}>English</Button>
-                  <Button variant={language === 'hi' ? 'default' : 'outline'} onClick={() => handleLanguageChange("hi")}>हिंदी (Hindi)</Button>
+                  <Button variant={language === 'en' ? 'secondary' : 'outline'} onClick={() => handleLanguageChange("en")}>English</Button>
+                  <Button variant={language === 'hi' ? 'secondary' : 'outline'} onClick={() => handleLanguageChange("hi")}>हिंदी (Hindi)</Button>
                </div>
             </div>
           </div>

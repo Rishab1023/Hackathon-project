@@ -14,7 +14,6 @@ import { Logo } from "@/components/common/logo";
 import { useTranslation } from "@/hooks/use-translation";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NavLink {
@@ -96,7 +95,6 @@ export function MobileNav({ navLinks }: MobileNavProps) {
               <div className="space-y-4">
                   <div className="flex items-center justify-between">
                       <h3 className="font-medium flex items-center gap-2"><Globe className="h-5 w-5"/> {language === 'en' ? 'Language' : 'भाषा'}</h3>
-                      <ThemeToggle />
                   </div>
                 <div className="flex flex-col space-y-2">
                     <Button variant={language === 'en' ? 'secondary' : 'outline'} onClick={() => handleLanguageChange("en")}>English</Button>

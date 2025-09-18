@@ -4,6 +4,7 @@ import Image from "next/image";
 import { AIPredictionTool } from "@/components/home/ai-prediction-tool";
 import { useTranslation } from "@/hooks/use-translation";
 import { AuthGuard } from "@/components/auth/auth-guard";
+import { HomeThemeToggle } from "@/components/theme/home-theme-toggle";
 
 
 export default function Home() {
@@ -38,6 +39,7 @@ export default function Home() {
           <AIPredictionTool />
         </section>
       </div>
+      <HomeThemeToggle />
     </AuthGuard>
   );
 }

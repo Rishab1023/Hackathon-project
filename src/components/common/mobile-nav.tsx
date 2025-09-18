@@ -56,41 +56,44 @@ export function MobileNav({ navLinks }: MobileNavProps) {
           <SheetHeader>
               <Logo />
           </SheetHeader>
-          <ScrollArea className="h-[calc(100%-4rem)]">
-            <div className="flex flex-col justify-between h-full mt-8 pr-6">
-              <div className="flex-grow">
-                <nav className="flex flex-col space-y-4">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="text-lg font-medium text-foreground hover:text-primary"
-                      onClick={handleLinkClick}
-                    >
-                      {t(link.label)}
-                    </Link>
-                  ))}
-                </nav>
-                <Separator className="my-8" />
-                {user ? (
-                    <div className="flex flex-col space-y-4">
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <Button variant="outline" onClick={handleLogout}>
-                            <LogOut className="mr-2" /> Logout
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="flex flex-col space-y-4">
-                        <Button asChild variant="outline" onClick={handleLinkClick}>
-                            <Link href="/login"><LogIn className="mr-2"/> Login</Link>
-                        </Button>
-                        <Button asChild onClick={handleLinkClick}>
-                            <Link href="/signup"><UserPlus className="mr-2"/> Sign Up</Link>
-                        </Button>
-                    </div>
-                )}
-              </div>
-              <div className="mt-8 space-y-4 pt-8">
+          <ScrollArea className="h-full pr-6">
+            <div className="mt-8 space-y-8 pb-12">
+              <nav className="flex flex-col space-y-4">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-lg font-medium text-foreground hover:text-primary"
+                    onClick={handleLinkClick}
+                  >
+                    {t(link.label)}
+                  </Link>
+                ))}
+              </nav>
+
+              <Separator />
+
+              {user ? (
+                  <div className="flex flex-col space-y-4">
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <Button variant="outline" onClick={handleLogout}>
+                          <LogOut className="mr-2" /> Logout
+                      </Button>
+                  </div>
+              ) : (
+                  <div className="flex flex-col space-y-4">
+                      <Button asChild variant="outline" onClick={handleLinkClick}>
+                          <Link href="/login"><LogIn className="mr-2"/> Login</Link>
+                      </Button>
+                      <Button asChild onClick={handleLinkClick}>
+                          <Link href="/signup"><UserPlus className="mr-2"/> Sign Up</Link>
+                      </Button>
+                  </div>
+              )}
+              
+              <Separator />
+
+              <div className="space-y-4">
                   <div className="flex items-center justify-between">
                       <h3 className="font-medium flex items-center gap-2"><Globe className="h-5 w-5"/> {language === 'en' ? 'Language' : 'भाषा'}</h3>
                       <ThemeToggle />
